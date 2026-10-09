@@ -1,0 +1,4 @@
+interface:
+  display_name: "WoW AddOn Development"
+  short_description: "Build, migrate, and debug WoW AddOns"
+  default_prompt: "Use $wow-addon-dev to build or maintain an AddOn for my target WoW client."

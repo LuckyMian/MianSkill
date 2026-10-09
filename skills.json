@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "repo": "https://github.com/LuckyMian/MianSkill",
+  "generatedAt": "2026-10-09T18:09:05+08:00",
+  "skillsRoot": "skills",
+  "skills": [
+    {
+      "name": "drawio",
+      "type": "official",
+      "path": "skills/drawio",
+      "description": "Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF.",
+      "source": {
+        "repo": "https://github.com/jgraph/drawio-mcp",
+        "path": "plugins/codex/drawio/skills/drawio",
+        "ref": "eebe7def96409a15511a51fda958f4a620c2300a"
+      },
+      "sha256": "01530F9CEE1CEDB9E4EE932E39896A6B25164F942192A9407BD10CEBAC956A57",
+      "files": 1,
+      "installTargets": [
+        "%USERPROFILE%\\.codex\\skills\\drawio",
+        "%USERPROFILE%\\.claude\\skills\\drawio"
+      ],
+      "provenance": "官方技能，来源 https://github.com/jgraph/drawio-mcp 的 plugins/codex/drawio/skills/drawio，固定版本 eebe7de，与本机文件哈希一致，未做修改"
+    },
+    {
+      "name": "ucs-development",
+      "type": "own",
+      "path": "skills/ucs-development",
+      "description": "Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects.",
+      "source": null,
+      "sha256": "0E20C9561669E440216D8C52A060B269A2D9605F1B72E1809666C27FB35456B6",
+      "files": 6,
+      "installTargets": [
+        "%USERPROFILE%\\.codex\\skills\\ucs-development",
+        "%USERPROFILE%\\.claude\\skills\\ucs-development"
+      ],
+      "provenance": "本地自建（ucs-development 目录创建于 2026-09-25）"
+    },
+    {
+      "name": "wow-addon-dev",
+      "type": "own",
+      "path": "skills/wow-addon-dev",
+      "description": "Develop, migrate, review, and debug World of Warcraft in-game AddOns using Lua, XML, TOC metadata, Blizzard UI code, and the version-matched WoW UI API. Use for Retail or Classic AddOn projects; do not use the Battle.net web API as a substitute for the in-game API.",
+      "source": null,
+      "sha256": "137A229D67661FBD54C7BEF704F9410D385B1F598AB955621A127E6F6EAD61F5",
+      "files": 5,
+      "installTargets": [
+        "%USERPROFILE%\\.codex\\skills\\wow-addon-dev",
+        "%USERPROFILE%\\.claude\\skills\\wow-addon-dev"
+      ],
+      "provenance": "本地自建（wow-addon-dev 目录创建于 2026-09-12）"
+    }
+  ]
+}
