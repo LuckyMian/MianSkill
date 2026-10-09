@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   把本机 skill 同步到 MianSkill 备份仓库，并重新生成 README.md / skills.json。
@@ -207,8 +207,29 @@ function Get-NormalizedText {
     param([string]$Text)
     if ($null -eq $Text) { return '' }
     # 时间戳不参与比较，保证重复运行不会产生空改动
-    return ($Text -replace '"generatedAt"\s*:\s*"[^"]*"', '"generatedAt":"__TS__"' `
+    return ($Text -replace "`r`n", "`n" `
+                  -replace '"generatedAt"\s*:\s*"[^"]*"', '"generatedAt":"__TS__"' `
                   -replace '最后更新：\d{4}-\d{2}-\d{2}', '最后更新：__DATE__')
+}
+
+# 语义比较 JSON：PowerShell 5.1 与 7 对非 ASCII 的转义方式不同，
+# 直接比文本会在两个版本间来回改写；这里解析后比较（忽略 generatedAt）。
+function Test-JsonEquivalent {
+    param([string]$Left, [string]$Right)
+    if (-not $Left -or -not $Right) { return $false }
+    try {
+        $l = $Left | ConvertFrom-Json
+        $r = $Right | ConvertFrom-Json
+    }
+    catch { return $false }
+    $l.generatedAt = ''
+    $r.generatedAt = ''
+    try {
+        $lc = $l | ConvertTo-Json -Depth 8 -Compress
+        $rc = $r | ConvertTo-Json -Depth 8 -Compress
+    }
+    catch { return $false }
+    return ($lc -eq $rc)
 }
 
 function Write-TextNoBom {
@@ -461,6 +482,9 @@ $manifest = [ordered]@{
 $manifestJson = ($manifest | ConvertTo-Json -Depth 8) + "`n"
 
 # 只有内容真的变了才落盘，保证重复运行不产生空改动
+$readme = $readme -replace "`r`n", "`n"
+$manifestJson = $manifestJson -replace "`r`n", "`n"
+
 $readmeChanged = $true
 if (Test-Path -LiteralPath $ReadmePath) {
     $oldReadme = [System.IO.File]::ReadAllText($ReadmePath, [System.Text.Encoding]::UTF8)
@@ -469,7 +493,7 @@ if (Test-Path -LiteralPath $ReadmePath) {
 $manifestChanged = $true
 if (Test-Path -LiteralPath $ManifestPath) {
     $oldManifest = [System.IO.File]::ReadAllText($ManifestPath, [System.Text.Encoding]::UTF8)
-    if ((Get-NormalizedText -Text $oldManifest) -eq (Get-NormalizedText -Text $manifestJson)) { $manifestChanged = $false }
+    if (Test-JsonEquivalent -Left $oldManifest -Right $manifestJson) { $manifestChanged = $false }
 }
 
 if (-not $DryRun) {
