@@ -352,15 +352,15 @@ function Get-SkillsTableMarkdown {
             'official' {
                 if ($e.Source.ref) {
                     $source  = "[$(($e.Source.repo -replace '^https://github\.com/', ''))]($($e.Source.repo)) ``$($e.Source.path)``"
-                    $version = "固定于 ``$($e.Source.ref.Substring(0,7))`` · SKILL.md SHA256 ``$shortHash``"
+                    $version = "固定于 ``$($e.Source.ref.Substring(0,7))`` · SKILL.md SHA256 ``$($e.SkillMdHash.ToLowerInvariant())``"
                 } else {
                     $source  = $e.Source.repo
-                    $version = "随客户端下发 · SHA256 ``$shortHash``"
+                    $version = "随客户端下发 · SKILL.md SHA256 ``$($e.SkillMdHash.ToLowerInvariant())``"
                 }
             }
             'official-modified' {
                 $source  = "克隆自 [$(($e.Source.repo -replace '^https://github\.com/', ''))]($($e.Source.repo)) 后独立修改"
-                $version = "基线 ``$($e.Source.ref.Substring(0,7))`` · 本机聚合 SHA256 ``$shortHash``"
+                $version = "基线 ``$($e.Source.ref.Substring(0,7))`` · 本机 SKILL.md SHA256 ``$($e.SkillMdHash.ToLowerInvariant())``（已修改）"
             }
         }
         $desc = ($e.Description -replace '\|', '\|').Trim()
@@ -415,6 +415,8 @@ $table
 | ``official-modified`` 克隆后独立修改 | 先克隆官方仓库、之后自己改动过 | 按独立技能维护，正文入库，来源栏写明「克隆自 X 后独立修改」 |
 
 判定由 ``sync.ps1`` 自动完成：与脚本内官方来源表的哈希一致即为官方（未修改），不一致即为克隆后独立修改，其余目录一律视为自建。新增自建技能无需改脚本即可被自动纳入。
+
+「版本 · 哈希」列中，官方技能显示 ``SKILL.md`` 的 SHA256，可直接与官方仓库文件核对；自建技能显示目录聚合哈希（同样记录在 ``skills.json`` 的 ``sha256`` 字段）。
 
 ## 同步更新
 

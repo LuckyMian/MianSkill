@@ -31,7 +31,7 @@ robocopy .\MianSkill\skills "$env:USERPROFILE\.claude\skills" /E /XD .git __pyca
 
 | 名称 | 类型 | 来源 | 版本 · 哈希 | 用途 |
 |------|------|------|-------------|------|
-| `drawio` | 官方（未修改） | [jgraph/drawio-mcp](https://github.com/jgraph/drawio-mcp) `plugins/codex/drawio/skills/drawio` | 固定于 `eebe7de` · SKILL.md SHA256 `01530f9cee1c` | Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF. |
+| `drawio` | 官方（未修改） | [jgraph/drawio-mcp](https://github.com/jgraph/drawio-mcp) `plugins/codex/drawio/skills/drawio` | 固定于 `eebe7de` · SKILL.md SHA256 `5e1d5460fc6a2da7da98ad851841ec174670f42c0b7339835cc709957b9328f7` | Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF. |
 | `ucs-development` | 自建 | 无（本地自建） | 聚合 SHA256 `0e20c9561669` | Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects. |
 | `wow-addon-dev` | 自建 | 无（本地自建） | 聚合 SHA256 `137a229d6766` | Develop, migrate, review, and debug World of Warcraft in-game AddOns using Lua, XML, TOC metadata, Blizzard UI code, and the version-matched WoW UI API. Use for Retail or Classic AddOn projects; do not use the Battle.net web API as a substitute for the in-game API. |
 
@@ -44,6 +44,8 @@ robocopy .\MianSkill\skills "$env:USERPROFILE\.claude\skills" /E /XD .git __pyca
 | `official-modified` 克隆后独立修改 | 先克隆官方仓库、之后自己改动过 | 按独立技能维护，正文入库，来源栏写明「克隆自 X 后独立修改」 |
 
 判定由 `sync.ps1` 自动完成：与脚本内官方来源表的哈希一致即为官方（未修改），不一致即为克隆后独立修改，其余目录一律视为自建。新增自建技能无需改脚本即可被自动纳入。
+
+「版本 · 哈希」列中，官方技能显示 `SKILL.md` 的 SHA256，可直接与官方仓库文件核对；自建技能显示目录聚合哈希（同样记录在 `skills.json` 的 `sha256` 字段）。
 
 ## 同步更新
 
