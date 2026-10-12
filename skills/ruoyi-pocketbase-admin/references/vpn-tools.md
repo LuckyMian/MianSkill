@@ -1,66 +1,111 @@
-# 工具 → VPN（内嵌 mihomo 的 metacubexd 面板）
+# 工具 → VPN（nginx 反代 mihomo 的 metacubexd 面板）
 
-页面：`views/tools/vpn/Index.vue`，路由 `/tools/vpn`，菜单「工具 → VPN」（`sys_menu` 里两条：`/tools` 父级 + `/tools/vpn`，
-图标 `Tools` / `Connection`）。页面本身很简单——一条地址栏 + 一个铺满内容区的 `iframe`，重点是**地址可配**和**外网怎么走**。
+页面：`views/tools/vpn/Index.vue`，路由 `/tools/vpn`，菜单「工具 → VPN」（`sys_menu` 两条：`/tools` 父级 + `/tools/vpn`，
+图标 `Tools` / `Connection`）。页面本身只是一条地址栏 + 铺满的 `iframe`；
+**面板不是直连 9090，而是走 N1 上新增的 nginx 入口 9080**（2026-10-13 改）。
 
-## 环境事实（2026-10-13 实测）
+## 现在的链路
 
-| 项 | 值 |
+```
+浏览器 ──9080──> nginx（N1 / iStoreOS）
+                  ├─ /                    → 播种页（写同源 localStorage 再跳面板）
+                  ├─ /_ping               → 免认证探活，只回 "vpn-proxy-ok"
+                  ├─ /ui/metacubexd/* 等  → 127.0.0.1:9090（注入 Authorization: Bearer <secret>，Basic Auth 保护）
+                  └─ /traffic /memory /connections /logs（WebSocket）
+                                          → 127.0.0.1:9090，**不套 Basic**，改校验 ?token=<secret>
+      mihomo（clash）仍监听 0.0.0.0:9090：它自己托管面板静态文件 + 控制 API；
+      nginx 走 127.0.0.1:9090，所以以后把 9090 从局域网/公网关掉也不影响这个页面。
+```
+
+好处：外网只需要转发 **9080** 一个端口（加一层 Basic Auth，将来加 TLS 也只改这一处）；
+密钥由 nginx 注入，页面使用者不用再手填密钥。
+
+## 三条硬约束（决定了为什么要这么搭）
+
+1. **浏览器不会给 `ws://` 带 Basic 凭证**（实测报 `HTTP Authentication failed; no valid credentials available`）。
+   所以 WS 那几个路径不能套 Basic Auth，改成校验面板自己带的 `?token=<secret>`（metacubexd 用 query 传，因为 WS 没法加自定义头）。
+   连带结论：**播种页里写的 secret 必须是 mihomo 的真值**，否则 WS 的 token 对不上。
+2. **metacubexd 把「后端地址 + 密钥」存在它自己 origin 的 localStorage**：`endpointList = [{id,url,secret}]`、
+   `selectedEndpoint = "id"`（值都是 JSON 字符串，键名来自打包后的源码 `it(J([]), { name: 'endpointList' })`）。
+   要让面板打开就是配置好的、不再弹「填地址/密钥」，就得**在同源的页面里先写好这两个键** → 这就是播种页的作用。
+3. **PocketBase 钩子代理不了 WebSocket**（JSVM 只有 `$http.send`），nginx 可以 ✔ —— 所以这一层放在 nginx，而不是前端或 PocketBase。
+
+## N1 上的文件（都在路由器上，不进前端仓库）
+
+| 路径 | 作用 |
 | --- | --- |
-| 面板服务 | **mihomo（clash）直接跑在 N1 宿主机上**，不是 Docker 容器；`netstat` 显示 `:::9090 LISTEN`（**全接口**，含 IPv6） |
-| 面板路径 | `http://192.168.1.168:9090/ui/metacubexd/#/overview`（mihomo 的 `external-ui` 静态托管） |
-| 控制 API | 同一端口的根路径（`/version` 等）**需要 secret**，不带 secret 返回 401 |
-| 响应头 | HTML **没有 `X-Frame-Options`、没有 CSP** → 可以正常被 iframe 内嵌 |
-| 注意 | 该服务只允许 **GET**：`curl -I`（HEAD）返回 **405 Method Not Allowed**，做连通性探测要用 GET |
+| `/etc/nginx/conf.d/vpn.conf` | 唯一的 server 块：9080 监听、Basic Auth、注入 secret、WS 处理 |
+| `/etc/nginx/seed/index.html` | 播种页：写 localStorage → `location.replace('/ui/metacubexd/#/overview')` |
+| `/etc/nginx/conf.d/vpn.htpasswd` | Basic Auth 账号（`openssl passwd -apr1` 生成，0600） |
+| `/etc/nginx/uci.conf` | OpenWrt 的 nginx 是 **uci 驱动**生成这个文件；`/etc/nginx/nginx.conf` 根本不存在，`nginx -t` 要 `-c /etc/nginx/uci.conf` |
 
-## 地址是数据，不是代码（改地址不用重新构建）
+nginx 相关操作：
 
-优先级从高到低：
+```sh
+/etc/init.d/nginx enable && /etc/init.d/nginx start   # 开机自启 + 启动
+/etc/init.d/nginx reload                              # 改完 conf.d 后重载（scp 覆盖不会自动生效！）
+nginx -t -c /etc/nginx/uci.conf                       # 语法检查
+```
 
-1. `localStorage.pb_vpn_url`——在这台设备上选过/填过的地址（切内外网时最有用）；
-2. `sys_dict` 里 `dict_type='vpn_dashboard'` 的条目——页面下拉里的预设，**在「系统管理 → 字典配置」改完刷新即生效**；
-3. 代码兜底 `http://192.168.1.168:9090/ui/metacubexd/#/overview`。
+## 踩过的坑（改这份配置前必读）
 
-`pnpm setup:pb` 会灌一条默认预设（`setup-collections.mjs` 的 `DICTS`）。**字典灌入改成了按 `dict_type` 粒度**：
-只有整类不存在时才写默认值，不会覆盖你在界面上改过的条目（原来只在「表为空」时才灌，新增一类字典就永远进不去）。
+1. **包自带的默认 server 会抢 80/443**（那是 uhttpd/LuCI 的端口）→ nginx 起不来、procd 崩溃循环。
+   处理：`uci delete nginx._lan`、`uci delete nginx._redirect2ssl`、`uci commit nginx`（保留 `nginx.global.uci_enable='true'`，
+   否则 init 脚本会说 “NOT using conf file!” 并去找不存在的 `/etc/nginx/nginx.conf`）。
+2. **`auth_basic` 提到 server 级后，WS 的 location 必须显式 `auth_basic off`**，否则 WS 握手照样被 Basic 拦（就是坑 1 的翻版）。
+3. **`location = /` 里不要用 `index index.html`**：index 模块会内部重定向到 `/index.html`，反而落到带代理的 `location /`。
+   用 `try_files /index.html =404;` + 单独一个 `location = /index.html`。
+4. **scp 覆盖配置后一定要 reload**，否则你以为改好了、其实跑的还是旧配置（排查时 `nginx -T` 看生效内容最省事）。
 
-页面上还会做**可达性探测**：`fetch(url, { mode: 'no-cors', cache: 'no-store' })` + 6 秒超时。
-`no-cors` 拿不到响应内容，但**请求完成就会 resolve**（401/404 也算通），只有网络层失败/混合内容拦截才会 reject；
-不可达时页面给出兜底说明（含「在新标签打开」出口）。这套判断是**在浏览器侧**做的——服务端从 N1 探 9090 永远是通的，没有参考价值。
+## 常用维护动作
 
-## 为什么不从 PocketBase 反向代理它
+```sh
+# 改 Basic Auth 密码（用户名 admin）
+openssl passwd -apr1 '新密码' > /tmp/h && printf 'admin:%s\n' "$(cat /tmp/h)" > /etc/nginx/conf.d/vpn.htpasswd && rm -f /tmp/h
+chmod 600 /etc/nginx/conf.d/vpn.htpasswd && /etc/init.d/nginx reload
 
-两点硬约束（别浪费时间去试）：
+# 加 TLS（外网访问建议）：需要真证书（自签会被浏览器拦），在 vpn.conf 的 server 里加
+#   listen 9443 ssl;  ssl_certificate /path/fullchain.pem;  ssl_certificate_key /path/privkey.pem;
+# 外网只转发 9443，并在应用里把 VPN 地址换成 https://<域名>:9443/
 
-1. **控制面板的 API 与实时流量走 WebSocket**，而 PocketBase 的 JSVM 钩子只有 `$http.send`，**没法代理 WebSocket 升级**；
-   代理过去会得到「页面能打开、数据全是空的」的半残效果。
-2. **iframe 的 origin 必须保持 `http://<host>:9090`**：metacubexd 把「后端地址 + secret」存在**该 origin 的 localStorage** 里。
-   如果改成从 8090 同源代理，origin 变了 → 面板要重新配置，而且和你平时单开面板那个标签页的设置不再共享。
+# 彻底不让局域网直连 9090（可选；nginx 走 127.0.0.1，不受影响）
+iptables -I INPUT -i br-lan -p tcp --dport 9090 -j DROP     # 撤销：把 -I 换成 -D
+```
 
-所以这个页面就是「浏览器直连 9090」的壳，不要在后台侧做转发。
+## 应用侧
 
-## 后期外网访问要怎么配
+- 地址来源优先级：`localStorage.pb_vpn_url`（这台设备选过的）> `sys_dict` 的 `vpn_dashboard` 条目（默认
+  `http://192.168.1.168:9080/`，改它不用重新构建）> 代码兜底常量。
+- 探活：`fetch(<origin>/_ping, { mode: 'no-cors' })` + 6 秒超时（`no-cors` 看不到状态码，但请求完成即 resolve；
+  `/_ping` 是免认证的，所以不会被 Basic 干扰）。
+- 第一次打开会弹一次 **nginx 的账号密码**（Basic Auth 的浏览器行为，输一次就记住）——这是页面顶栏那句提示的由来。
+- 混合内容：后台若是 HTTPS，内嵌的 `http://…:9080` 会被浏览器拦，页面会直接提示要一起换 HTTPS。
 
-1. 让 **9090 能在公网访问**（iStoreOS 上加一条端口转发；或把面板挂到带 HTTPS 的反向代理上）。
-2. 在 VPN 页面把地址切到对外地址（下拉里加一条字典条目，或直接用「自定义地址…」）。
-3. 注意两条：
-   - **混合内容**：如果这个后台以后是 HTTPS，浏览器会拦掉 `http://…:9090` 的内嵌页。页面已经会直接提示这一点——
-     要么给 9090 也配 HTTPS（反代 + 证书），要么后台继续走 HTTP。
-   - **安全**：mihomo 的 external-controller 只有一个 secret 做鉴权，**别把 9090 裸奔到公网**；优先「只放行给固定 IP / 走 VPN 或隧道 / 反代加一层认证 + TLS」。
-4. 用户菜单里的「服务地址」是给前端连 PocketBase 用的，与这个 iframe 无关。
+## 环境事实
 
-## 页面细节
+- N1 是 **iStoreOS 25.12.5（amlogic/meson）**，包管理器是 **`apk`（apk-tools 3.0.5），不是 opkg**（`opkg: not found`）。
+  nginx 用 `apk add nginx` 装的（装的是 `nginx-ssl 1.26.3`）。
+- overlay 分区 1.2G / 空闲约 1.0G，nginx 这套只占几百 KB。
+- mihomo 由 OpenClash 拉起（进程 `clash -d /etc/openclash -f /etc/openclash/<配置>.yaml`），
+  `external-controller: 0.0.0.0:9090`、`secret` 与 `openclash.config.dashboard_password` 同一个值——
+  **改密码要改 OpenClash 那边的设置**，然后同步更新 `vpn.conf` 里注入的 Bearer 和播种页里的 secret。
 
-- 顶栏：预设下拉（内网 / 自定义…）、地址输入（仅自定义时出现）、刷新（重载 iframe 并重新探测）、新标签打开、右侧状态（检测中/地址可达/面板已加载/不可达）。
-- `iframe` 不 sandbox（要保留它的 localStorage 与 WebSocket），`allow="fullscreen; clipboard-read; clipboard-write"`。
-- 高度沿用全站那套 `calc(100vh - var(--app-header-height) - var(--app-tags-height))`，手机上标签栏/顶栏变量归零后自动铺满。
-- 手机端地址栏自动换行（媒体查询里 `select` 独占一行、输入框整行、状态另起一行）。
+## 怎么验（两条腿都要走）
 
-## 验证方法
+```sh
+# 1) N1 上（或任意在内网的机器）
+curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.168:9080/_ping              # 200，免认证
+curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.168:9080/version            # 401（要 Basic）
+curl -s -u admin:<pw> http://192.168.1.168:9080/version                                # 200 {"meta":true,...}
+curl -s -u admin:<pw> -o /dev/null -w '%{http_code}\n' http://192.168.1.168:9080/ui/metacubexd/
+curl -s -i -N -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+  -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' -H 'Sec-WebSocket-Version: 13' \
+  "http://192.168.1.168:9080/traffic?token=<secret>" | head -1                          # 101 Switching Protocols
+```
 
-用 `puppeteer-core` 打开 `#/tools/vpn`：
+浏览器侧（puppeteer，`page.authenticate` 提供 Basic 凭证）：
 
-- 断言 `iframe[src]` 指向 `9090/ui/metacubexd/`，且**监听到对 9090 的真实响应**（`page.on('response')` 里能看到
-  `/ui/metacubexd/` 与它的 `assets/*.js|css` 返回 200）——这是「真的嵌进去了」最硬的证据；
-- 故意切到一个不可达地址（如 `http://192.168.1.99:9090/…`）断言出现兜底面板与「在新标签打开」；
-- 最后切回内网预设，断言 iframe 恢复。
+- 打开 `#/tools/vpn`，断言 iframe 指向 9080、`/_ping` 与面板资源都是 200、**没有 4xx/5xx**；
+- 单独开一个页签访问 `http://192.168.1.168:9080/`，等它跳到 `/ui/metacubexd/` 后断言
+  **页面上没有输入密钥的表单**（`input[placeholder="secret"]` / 「添加」按钮）——这条就是「不再让你填密钥」的回归断言；
+- 再切一个不可达地址（如 `http://192.168.1.99:9090/…`）断言出现兜底面板。
