@@ -65,12 +65,13 @@ metadata:
 | SSH | `root@192.168.1.168:22`，**密码登录**；路由器是 iStoreOS（dropbear），`scp` 必须加 `-O` |
 | 资源上限 | 容器内存限制 96MiB（实测占用约 21MiB）；rootfs 1.2GB，可用约 1.1GB |
 
-## 当前状态与待办（截至 2026-10-12）
+## 当前状态与待办（截至 2026-10-13）
 
 - 线上：`http://192.168.1.168:8090` 就是本系统；原测试页备份为 `/opt/pocketbase/pb_public/index.backup-*.html`。
-- 集合：16 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule`（已下线，仅留数据）/ `work_report` / `work_todo_list` / `work_todo` / `work_note` / `work_note_folder`。
-- 数据：`sys_menu` 11 条（待办事项排「日常工作」第一位）、`sys_dict` 11 条；业务表基本为空，待办表按需使用。
-- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、工作记录、随手笔记（Apple 备忘录风格：三栏、点开即写、自动保存、置顶、最近删除）、菜单/字典/集合管理。
+- 集合：18 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule`（已下线，仅留数据）/ `work_report` / `work_todo_list` / `work_todo` / `work_note` / `work_note_folder` / `work_canvas` / `work_canvas_item`。
+- 数据：`sys_menu` 12 条（含「无限画布」）、`sys_dict` 11 条；业务表基本为空，待办/画布按需使用。
+- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、工作记录、随手笔记（Apple 备忘录风格）、**无限画布（PureRef 风格参考板 v1，见 [canvas-module.md](canvas-module.md)）**、菜单/字典/集合管理。
+- OSS 钩子（`/opt/pocketbase/pb_hooks/oss.pb.js`，2026-10-13 更新，旧版备份在同级 `oss.pb.js.bak-20261013`）：上传目录白名单 `notes/` + `canvas/`，新增 `/api/oss/fetch` 网页图片抓取代理；改动细节与 JSVM 限制见 [oss-images.md](oss-images.md)。
 - 待办与归档的关系：待办里「完成」或「删除」都会**先写入 `work_task`（「归档任务」）再从待办移除**，所以待办页只留未完成的事，没有「已完成」视图；归档失败时待办会被保留，不会丢数据。
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
 - 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。

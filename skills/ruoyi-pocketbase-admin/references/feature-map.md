@@ -101,6 +101,11 @@ superuser 密码与 OSS 的 AK/SK 只存在于 `frontend/.env.local`（已 gitig
 - 界面报错先别信文案：用 `curl` 直接打 API 看状态码与 `data`，400 十有八九是缺 `created`/`updated` 或 filter 引用了不存在的字段。
 - 端到端断言用**轮询**等提示出现（`ElMessage` 默认 3 秒就消失），不要固定 `sleep`。
 - 私有桶签名这类纯计算可以先离线复算（Node 独立算一遍 `base64(hmac_sha1(...))`），再上真机跑端到端。
+- **UI 交互也能自动化**：本机已装 Chrome，用 `puppeteer-core`（临时目录里 `npm i puppeteer-core`，不下载浏览器内核，
+  `executablePath` 指向 `C:\Program Files\Google\Chrome\Application\chrome.exe`）就能跑登录 → 画布 → 上传/拖动/裁剪/撤销/回收 的完整断言。
+  两个必须记住的坑：① Element Plus 的下拉浮层用完仍留在 DOM 里，`querySelector` 会点到隐藏的旧项——按
+  `getBoundingClientRect().width > 0` 判可见（**不能用 `offsetParent`**，浮层是 fixed 定位、恒为 null），并在打开前给已有项打标记、只点新出现的那个；
+  ② 画布内的拖动位移是世界坐标，断言时要除以当前 zoom（`scale(...)`），别按屏幕像素算。
 
 ## 三、新增一个功能的检查清单
 

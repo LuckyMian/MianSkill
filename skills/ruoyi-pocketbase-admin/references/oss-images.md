@@ -36,19 +36,36 @@ key 仍是 `<dir><年>/<月>/<16位随机>.<ext>`，有效期/大小限制照旧
 前端对应 `requestUploadPolicy(ext, dir)` 与 `uploadImageToOss(file, { dir, prepare })`：`prepare: 'canvas'` 走 `shrinkForCanvas`
 （>2560px 或 >6MB 才缩、PNG/WebP 输出 PNG 保透明、GIF/SVG 原样），不传则是笔记那套 1600px 压缩。
 
-### `POST /api/oss/fetch`：把网页上的图片转存到 OSS
+### `POST /api/oss/fetch`：网页图片抓取**代理**（不是服务端转存）
 
 浏览器的 CORS 决定了「把网页图片直接拖进画布」不可能在前端完成下载，所以让服务端代抓：
 
 ```
-POST /api/oss/fetch  { url }   →   { key, signedUrl }       （需登录）
+POST /api/oss/fetch  { url }   →   图片字节本身（Content-Type 保持 image/*）   （需登录）
 ```
 
 流程：校验 `http`/`https` → **拒绝内网地址**（`localhost`、`127.`、`10.`、`192.168.`、`172.16-31.`、`169.254.`）→
-`$http.send` 抓取（timeout 20s）→ 要求 `Content-Type: image/*` → 长度 ≤10MB →
-用现成的 V1 签名 `PUT` 写进 `canvas/<年>/<月>/<随机>.<ext>` → 返回 key 与签名 GET 地址。
-失败要把原因返回前端（钩子默认只有笼统 400，没法排查）；前端 `fetchRemoteImage()` 会在消息里补「需要服务端提供该路由」的提示。
-注意 `$http.send` 的 `body` 是**字节数组**，`headers` 的键大小写不统一，判内容类型时统一转小写再取值。
+先 `HEAD` 探一次（拿 `Content-Length` / `Content-Type`，能在下载前挡掉超大图与非图片，HEAD 不被支持就跳过）→
+`$http.send` GET 抓取（timeout 30s）→ 复核类型与长度 ≤10MB → `e.blob(200, contentType, bytes)` **把字节原样回给浏览器**。
+前端 `fetchRemoteImage()` 收到 Blob 后包成 `File`，再走**和本地图片完全一样**的直传链路写进 `canvas/`。
+
+**为什么不做服务端直接转存**（这条是实测结论，别再试第二遍）：
+
+- `$http.send` 的 `body` 只接受 `string | FormData`（`types.d.ts` 明确写了），**发不了二进制**；
+- 试过 `$filesystem.fileFromBytes(bytes, name)` + `new FormData()` + PostObject，OSS 直接 400 `InvalidArgument: The bucket POST must contain the specified 'OSSAccessKeyId'`——JSVM 那边多部件表单没能按 OSS 期望的样子发出去；
+- 用字符串 body 发二进制会被 UTF-8 编码，字节 >0x7F 全坏，更不行。
+
+代价是图要经过 N1 内存中转一次（不落盘）。`e.blob(status, contentType, string|Array<number>)` 是关键，`$http.send` 的响应体本来就是字节数组，直接回传即可。
+失败要把原因返回前端（钩子默认只有笼统 400，没法排查）；`headers` 的键大小写不统一，取值前统一转小写。
+
+**删除的目录白名单**：`removeObject()` 现在用 `isAllowedKey()` 判定，`notes/` 与 `canvas/` 都允许；只按配置里的 `dir` 判会把画布图片的回收全部拒掉（报「key 不在允许的目录内」）。
+
+### 用 V1 签名直接列 OSS 对象（本地排查/清理用）
+
+`GET https://<bucket>.<endpoint>/?prefix=canvas/&max-keys=1000`，Header 为 `Date` + `Authorization: OSS <ak>:<sig>`，
+`sig = base64(hmac_sha1(sk, "GET\n\n\n<Date>\n/<bucket>/"))` —— **CanonicalizedResource 只算 `/bucket/`**：
+把 `?prefix=&max-keys=` 也算进去会 `SignatureDoesNotMatch`（URL 上的 query 照常带）。
+删除单个对象则是 `DELETE /<key>`，canonical 为 `/<bucket>/<key>`（正常拼 key，见上面的回收流程）。
 
 ## 服务端钩子的四个硬约束（本版本 PocketBase 0.40.5 实测）
 
