@@ -13,7 +13,8 @@
 | `work_task` | `title` text*、`status` select(todo/doing/done/archived)、`priority` select(high/mid/low)、`due_date` date、`progress` number、`owner` text、`tags` text、`content` text、`source_id` text、`archived_at` date | **归档任务**（待办里完成/删除的任务自动归档到这里，`source_id` 存来源待办 id 做幂等键） |
 | `work_schedule` | `title` text*、`start_at` date、`type` select(meeting/todo/remind/other)、`done` bool、`location` text、`notes` text | 待办日程（**已下线**：菜单撤掉、集合与数据保留） |
 | `work_report` | `title` text*、`period_start` date、`period_end` date、`hours` number、`tags` text、`content` text、`issues` text、`next_plan` text | 工作记录 / 周报 |
-| `work_note` | `title` text*、`tags` text、`content` text | 随手笔记 |
+| `work_note_folder` | `title` text*、`sort` number | 笔记文件夹 |
+| `work_note` | `title` text（可选，由正文首行自动派生）、`tags` text、`content` **editor**（富文本 HTML）、`pinned` bool、`folder` relation→work_note_folder（可空=未分类）、`trashed` bool、`trashed_at` date | 随手笔记（Apple 备忘录风格，见 [note-module.md](note-module.md)） |
 | `work_todo_list` | `title` text*、`color` select(primary/success/warning/danger/info)、`sort` number | 待办清单 |
 | `work_todo` | `title` text*、`list` relation→work_todo_list（maxSelect 1、cascadeDelete false，可空=未分类）、`due_date` date、`important` bool、`done` bool、`completed_at` date、`my_day` date、`notes` text、`steps` json | 待办事项（微软 To Do 风格，见 [todo-module.md](todo-module.md)） |
 

@@ -19,6 +19,7 @@ metadata:
 - 架构、目录地图、配置化 CRUD 引擎、怎么加一个模块 → [architecture.md](references/architecture.md)
 - 动集合/字段/权限，或列表报「集合不存在」 → [pocketbase-collections.md](references/pocketbase-collections.md)
 - 改「待办事项」（微软 To Do 风格那一页）的交互语义 → [todo-module.md](references/todo-module.md)
+- 改「随手笔记」（Apple 备忘录风格那一页）→ [note-module.md](references/note-module.md)
 - 发布、验证、回滚、线上排查、迁移到外置盘 → [deploy-n1.md](references/deploy-n1.md)
 - 被问「为什么不用若依/yudao/低代码」，或要重新选型 → [framework-landscape.md](references/framework-landscape.md)
 
@@ -63,9 +64,9 @@ metadata:
 ## 当前状态与待办（截至 2026-10-12）
 
 - 线上：`http://192.168.1.168:8090` 就是本系统；原测试页备份为 `/opt/pocketbase/pb_public/index.backup-*.html`。
-- 集合：13 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule` / `work_report` / `work_note` / `work_todo_list` / `work_todo`。
+- 集合：16 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule`（已下线，仅留数据）/ `work_report` / `work_todo_list` / `work_todo` / `work_note` / `work_note_folder`。
 - 数据：`sys_menu` 11 条（待办事项排「日常工作」第一位）、`sys_dict` 11 条；业务表基本为空，待办表按需使用。
-- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、工作记录、随手笔记、菜单/字典/集合管理。
+- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、工作记录、随手笔记（Apple 备忘录风格：三栏、点开即写、自动保存、置顶、最近删除）、菜单/字典/集合管理。
 - 待办与归档的关系：待办里「完成」或「删除」都会**先写入 `work_task`（「归档任务」）再从待办移除**，所以待办页只留未完成的事，没有「已完成」视图；归档失败时待办会被保留，不会丢数据。
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
 - 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
