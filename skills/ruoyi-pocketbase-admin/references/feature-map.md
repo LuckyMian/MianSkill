@@ -30,6 +30,7 @@
 | 请求层 | `api/pb.ts` | axios 封装；基础地址三级回退（localStorage → `VITE_PB_URL` → 同源）；401 统一登出 |
 | OSS 图片 | `api/oss.ts` + 服务器 `pb_hooks/oss.pb.js` | 浏览器直传 OSS（目录白名单 `notes/`、`canvas/`），正文只存 `data-oss-key`，私有桶签名读；网页图片可让服务端代抓转存（`/api/oss/fetch`） |
 | 亮/暗主题 | `stores/ui.ts` + `style.css` 的 `--app-*` 变量 + Element Plus 官方暗色变量 | `<html>.dark` 一切，全站换肤；专注模式（画布全屏）也在 ui store，见 [theme.md](theme.md) |
+| 手机端 | `layout/Index.vue`（≤900px 外壳）+ 各页抽屉 + `CanvasStage` 触摸手势 | 侧栏改抽屉、隐藏标签栏、表格弹窗单列、画布双指缩放/长按菜单，见 [mobile.md](mobile.md) |
 | 日期与格式化 | `utils/format.ts` | `pbDateOnly` / `localDay` / `humanDay` / `toCsv` |
 | 初始化 | `scripts/setup-collections.mjs` | 幂等建集合、补缺失字段、灌默认菜单与字典 |
 | 发布 | `scripts/deploy.mjs` + `deploy-interactive.ps1` | `dist` → `pb_public`，只写不删 + 覆盖前备份 |

@@ -23,6 +23,7 @@ metadata:
 - 改「随手笔记」（Apple 备忘录风格那一页）→ [note-module.md](references/note-module.md)
 - 改「无限画布」（PureRef 风格参考板：图片/文字/分组框、平移缩放、裁剪旋转、撤销重做）→ [canvas-module.md](references/canvas-module.md)
 - 改亮/暗主题、画布全屏（专注模式）、给新页面加配色 → [theme.md](references/theme.md)
+- 改手机端适配、加触摸手势、改断点 → [mobile.md](references/mobile.md)
 - 配/改笔记图片上传（阿里云 OSS 直传、PocketBase 钩子） → [oss-images.md](references/oss-images.md)
 - 发布、验证、回滚、线上排查、迁移到外置盘 → [deploy-n1.md](references/deploy-n1.md)
 - 被问「为什么不用若依/yudao/低代码」，或要重新选型 → [framework-landscape.md](references/framework-landscape.md)
@@ -71,7 +72,7 @@ metadata:
 - 线上：`http://192.168.1.168:8090` 就是本系统；原测试页备份为 `/opt/pocketbase/pb_public/index.backup-*.html`。
 - 集合：18 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule`（已下线，仅留数据）/ `work_report` / `work_todo_list` / `work_todo` / `work_note` / `work_note_folder` / `work_canvas` / `work_canvas_item`。
 - 数据：`sys_menu` 12 条（含「无限画布」）、`sys_dict` 11 条；业务表基本为空，待办/画布按需使用。
-- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、工作记录、随手笔记（Apple 备忘录风格）、**无限画布（PureRef 风格参考板：图片/文字/流程节点/分组框 + 连线流程图 + 全屏专注，见 [canvas-module.md](canvas-module.md)）**、**全站亮/暗主题**（顶栏切换，见 [theme.md](theme.md)）、菜单/字典/集合管理。
+- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、工作记录、随手笔记（Apple 备忘录风格）、**无限画布（PureRef 风格参考板：图片/文字/流程节点/分组框 + 连线流程图 + 全屏专注 + 手机触摸手势，见 [canvas-module.md](canvas-module.md)）**、**全站亮/暗主题**（顶栏切换，见 [theme.md](theme.md)）、**手机端适配**（≤900px 外壳抽屉化 + 画布双指缩放/长按菜单，见 [mobile.md](mobile.md)）、菜单/字典/集合管理。
 - OSS 钩子（`/opt/pocketbase/pb_hooks/oss.pb.js`，2026-10-13 更新，旧版备份在同级 `oss.pb.js.bak-20261013`）：上传目录白名单 `notes/` + `canvas/`，新增 `/api/oss/fetch` 网页图片抓取代理；改动细节与 JSVM 限制见 [oss-images.md](oss-images.md)。
 - 待办与归档的关系：待办里「完成」或「删除」都会**先写入 `work_task`（「归档任务」）再从待办移除**，所以待办页只留未完成的事，没有「已完成」视图；归档失败时待办会被保留，不会丢数据。
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
