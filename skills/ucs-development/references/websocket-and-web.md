@@ -10,6 +10,8 @@ Default settings in `WebSocketControllerSettings.cpp`: bind `0.0.0.0`, Runtime b
 
 `UltraControlSystem` depends on the WebSocket module. To avoid a cycle, `WebSocketControlFunctionLibrary.cpp` resolves `/Script/UltraControlSystem.UCS_Camera` by reflected class path and iterates matching Actors; it does not link directly to `AUCS_Camera`. Preserve this direction when adding camera-specific behavior.
 
+That decoupling is enforced by `WebSocketUCSAvailability.h` (`WebSocketUCS::IsAvailable()`, plus the reflected class-path constants), which requires the `UltraControlSystem` module to be loaded and `AUCS_Camera` to be registered. Without UCS the plugin degrades instead of erroring: the Runtime `get_all_ucs_cameras` and every Editor UCS command fall through to ordinary receiver dispatch and answer a plain `ack`, the Editor server sends no `ucs_scene_snapshot` on connect, `instance_info` carries `"ucsAvailable": false`, and the Vue pages hide the UCS panels. The UCS scene snapshot automation test skips rather than fails. Add new UCS commands below the editor gate in `HandleBuiltInCommand` and keep UCS-free commands above it.
+
 ## Protocol
 
 `WebSocketJsonProtocol.cpp` validates UTF-8 and requires a top-level JSON object. On connection each server sends:

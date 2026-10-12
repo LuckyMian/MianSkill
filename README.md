@@ -32,7 +32,7 @@ robocopy .\MianSkill\skills "$env:USERPROFILE\.claude\skills" /E /XD .git __pyca
 | 名称 | 类型 | 来源 | 版本 · 哈希 | 用途 |
 |------|------|------|-------------|------|
 | `drawio` | 官方（未修改） | [jgraph/drawio-mcp](https://github.com/jgraph/drawio-mcp) `plugins/codex/drawio/skills/drawio` | 固定于 `eebe7de` · SKILL.md SHA256 `5e1d5460fc6a2da7da98ad851841ec174670f42c0b7339835cc709957b9328f7` | Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF. |
-| `ucs-development` | 自建 | 无（本地自建） | 聚合 SHA256 `832cbcc88709` | Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects. |
+| `ucs-development` | 自建 | 无（本地自建） | 聚合 SHA256 `71fdf896b654` | Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects. |
 | `wow-addon-dev` | 自建 | 无（本地自建） | 聚合 SHA256 `02a5029c353f` | Develop, migrate, review, and debug World of Warcraft in-game AddOns using Lua, XML, TOC metadata, Blizzard UI code, and the version-matched WoW UI API. Use for Retail or Classic AddOn projects; do not use the Battle.net web API as a substitute for the in-game API. |
 
 ## 来源与修改标记规则
