@@ -16,6 +16,7 @@ metadata:
 
 ## 按需求选读
 
+- 想知道「现在有哪些功能、分别用了什么方法」，或要照着加一个新模块 → [feature-map.md](references/feature-map.md)
 - 架构、目录地图、配置化 CRUD 引擎、怎么加一个模块 → [architecture.md](references/architecture.md)
 - 动集合/字段/权限，或列表报「集合不存在」 → [pocketbase-collections.md](references/pocketbase-collections.md)
 - 改「待办事项」（微软 To Do 风格那一页）的交互语义 → [todo-module.md](references/todo-module.md)
@@ -32,6 +33,7 @@ metadata:
 4. **一份 schema 驱动三处**。加字段只改 `src/config/modules/*.ts`，不要在页面里手写表格列或表单控件。
 5. **凭据不落仓库、不落技能**。PocketBase superuser 密码放 `frontend/.env.local`（已被 gitignore）；SSH 是另一套密码。两者都不要写进技能文件或提交到 git。
 6. **日期按「本地墙钟、不带时区」存取**（写 `YYYY-MM-DD 00:00:00`），显示日期用 `pbDateOnly()` 取前 10 位，不要用 `pbDateToLocal()`（会把 `…000Z` 当 UTC 换算，日期时间都 +8 小时）。
+7. **破坏性动作先落账再删除**。待办「完成/删除」都先写 `work_task`（`source_id` 做幂等键），成功才删原记录；失败就保留原数据并把原因显示出来。同类：删清单先把待办移到未分类，进「最近删除」的笔记不回收图片。归纳见 [feature-map.md](references/feature-map.md)。
 
 ## 两个踩过的坑（再犯代价很高）
 

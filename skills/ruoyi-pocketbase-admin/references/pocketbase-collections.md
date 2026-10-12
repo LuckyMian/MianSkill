@@ -2,7 +2,7 @@
 
 服务端：PocketBase **0.40.5**（`http://192.168.1.168:8090`）。superuser 登录用 `POST /api/collections/_superusers/auth-with-password`，之后所有请求带 `Authorization: <token>`。
 
-## 六个业务集合
+## 九个业务集合
 
 由 `frontend/scripts/setup-collections.mjs` 创建，权限统一为「登录用户可读写」（`@request.auth.id != ""`，superuser 天然全权限）：
 
@@ -18,7 +18,7 @@
 | `work_todo_list` | `title` text*、`color` select(primary/success/warning/danger/info)、`sort` number | 待办清单 |
 | `work_todo` | `title` text*、`list` relation→work_todo_list（maxSelect 1、cascadeDelete false，可空=未分类）、`due_date` date、`important` bool、`done` bool、`completed_at` date、`my_day` date、`notes` text、`steps` json | 待办事项（微软 To Do 风格，见 [todo-module.md](todo-module.md)） |
 
-（`text*` = 必填。`id` 由 PocketBase 自动生成，但 **`created` / `updated` 不会自动加**，见下面的坑。）
+（`text*` = 必填。`id` 由 PocketBase 自动生成，但 **`created` / `updated` 不会自动加**，见下面的坑。表里 9 张都由 `setup-collections.mjs` 定义；`work_todo`、`work_note` 因为是 relation 字段，走两阶段创建。）
 
 ## 必须显式声明 `created` / `updated`（踩过）
 
@@ -50,6 +50,8 @@ node scripts/setup-collections.mjs --url=http://192.168.1.168:8090 --email=admin
 
 默认灌入：`sys_menu` 10 条（工作台 / 日常工作 4 个子项 / 系统管理 3 个子项）、`sys_dict` 11 条（`task_status` 4、`task_priority` 3、`schedule_type` 4）。字典的 `color` 取 Element Plus 的标签色名（`primary`/`success`/`warning`/`danger`/`info`），直接决定列表里标签长什么样。
 
+注意「系统管理 → 集合总览」页里的 `expected` 清单只列了 `sys_menu` / `sys_dict` / `work_task` / `work_schedule` / `work_report` / `work_note` 六项，**没跟上后来的 `work_note_folder` / `work_todo_list` / `work_todo`**，判断缺失以脚本为准。
+
 ## 前端用到的查询语法
 
 引擎在 `CrudTable/index.vue` 的 `buildFilter()` 里拼 PocketBase filter：
@@ -71,4 +73,6 @@ node scripts/setup-collections.mjs --url=http://192.168.1.168:8090 --email=admin
 
 ## 现网数据现状（2026-10-12）
 
-13 个集合：6 个 PocketBase 内置（`_superusers` / `users` / `_mfas` / `_otps` / `_externalAuths` / `_authOrigins`）、`demo_posts`（早期测试页残留的空集合，可删）、以及上面 6 个业务集合。`sys_menu` 10 条、`sys_dict` 11 条，四个 `work_*` 表为空。
+16 个集合：6 个 PocketBase 内置（`_superusers` / `users` / `_mfas` / `_otps` / `_externalAuths` / `_authOrigins`）、`demo_posts`（早期测试页残留的空集合，可删）、以及上面 9 个业务集合。`sys_menu` 实测 11 条（脚本默认 10 条，另有 1 条是在「菜单配置」里手工加的）、`sys_dict` 11 条，业务表基本为空、待办按需使用。
+
+查现场实际数量：`GET /api/collections?perPage=100` 与 `GET /api/collections/sys_menu/records?perPage=200`（带 superuser token）。没带 token 只能看 `/api/health`。
