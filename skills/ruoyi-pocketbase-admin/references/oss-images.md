@@ -50,3 +50,14 @@
 - **没有 OSS 交互也能验证签名**：用 Node 独立复算 `base64(hmac_sha1(secret, policy))` 与 `signature` 比对，再检查 policy 的 `content-length-range`、`starts-with` 条件与 key 前缀（脚本 `check-policy.mjs`）。
 - 端到端（必须真机跑）：浏览器插一张图 → 断言正文含 `data-oss-key`、`img.naturalWidth > 0`、刷新后仍能显示、**带签名 200 / 裸链接 403**；完事用签名 DELETE 清掉测试对象。
 - 私有桶的签名 GET 格式：`GET\n\n\n<Expires>\n/<bucket>/<key>` → `base64(hmac_sha1(secret, …))`，拼成 `?OSSAccessKeyId=&Expires=&Signature=`（Signature 要 URL 编码）。
+
+## 删除笔记里的图片 → OSS 同步回收（已实现）
+
+- **触发点**：笔记**保存**时对比保存前后正文里的 `data-oss-key`，不再被引用的 key 调 `POST /api/oss/delete` 回收；另外"刚上传、还没保存就被删掉"的（粘了又删）会被 `pendingUploads` 当成孤儿一起回收。
+- **删除方式**（钩子 `OSS_CONFIG.deleteMode`）：
+  - `'trash'`（默认）：先 CopyObject 到 `trash/<原 key>` 再删原件 → 可恢复；
+  - `'hard'`：直接物理删除，不可恢复。
+- **整条笔记移入「最近删除」不回收图片**（笔记还能恢复）；只有**彻底删除**才回收它引用的所有图片。
+- bucket 上已配生命周期规则：`trash/` 前缀 **30 天自动清理**（`PUT /?lifecycle` 200，`GET /?lifecycle` 可回读确认），所以回收站不会无限增长。
+- 服务端删除要点：JSVM 里 `$http` **只有 `send` 一个方法**；删除用 V1 签名 `DELETE\n\n\n<Date>\n/<bucket>/<key>`，CopyObject 是 `PUT /<bucket>/<trashKey>` 且必须把 `x-oss-copy-source` 计入 `CanonicalizedOSSHeaders`；`$http.send` 返回的 `body` 是**字节数组**，要读文本得自己转字符串。
+- 端到端验证：贴图 → 从笔记里删掉图片 → 断言原 key 404、`trash/<key>` 200；再把整条笔记彻底删除 → 断言图片同样进 trash。收尾用签名 DELETE 清掉 trash 里的测试对象。
