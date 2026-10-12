@@ -24,3 +24,21 @@
 - 加字段（例如附件、提醒时间）：先给 `work_todo` 补字段（PocketBase 后台 `/_/` 或改 `scripts/setup-collections.mjs` 后跑 `pnpm setup:pb`），再在 `TodoDetailPane.vue` 补 UI；`TodoListPane` 的行内摘要只展示到期日、子步骤进度和备注。
 - 计数角标来自 `loadCounts()`：一次拉全部未完成的 `(id, list)` 在前端聚合，所以每清单超过 200 条未完成时角标会偏小；真到那个量级再改成服务端分组统计。
 - 待办页与工作台「今日待办」卡片是两处独立查询：卡片 = `done=false && (my_day~'今天' || due_date~'今天')`，单次查询天然去重。
+
+## 归档任务（与「归档任务」页面的契约）
+
+待办不再自己留历史，而是把终结状态写进 `work_task`（页面「归档任务」，菜单 `/work/task`）：
+
+| 待办动作 | 归档动作 |
+| --- | --- |
+| 勾选完成 | 写一条 `work_task`：`status='done'`、`progress=100`、`archived_at=今天` |
+| 取消完成 | 按 `source_id` 删除对应归档记录（撤回归档） |
+| 删除待办 | 先归档（`status='archived'`、`progress=0`）再删待办，保证删掉的东西有据可查 |
+
+映射规则：`title` 同名；`tags` 存原清单名；`priority` 由「重要」映射为 high/mid；`due_date` 原样带过；`content` 拼成「来源 + 清单 + 备注 + 子步骤勾选摘要」。**`source_id` = 待办记录 id，是幂等键**——重复完成只会更新同一条归档，不会堆重复。
+
+注意点：
+
+- 归档失败不能吞掉：store 里把原因放在 `archiveError`，界面提示「待办本身已改成功，但归档失败」，不要假装成功。
+- 归档是单向的：在「归档任务」页面删记录不会影响待办；取消完成才会撤回归档。
+- 待办日程 `work_schedule` 是与归档任务并列的独立模块，别把两者合并。

@@ -65,6 +65,7 @@ metadata:
 - 线上：`http://192.168.1.168:8090` 就是本系统；原测试页备份为 `/opt/pocketbase/pb_public/index.backup-*.html`。
 - 集合：13 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule` / `work_report` / `work_note` / `work_todo_list` / `work_todo`。
 - 数据：`sys_menu` 11 条（待办事项排「日常工作」第一位）、`sys_dict` 11 条；业务表基本为空，待办表按需使用。
-- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、任务台账、待办日程、工作记录、随手笔记、菜单/字典/集合管理。
+- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、待办日程、工作记录、随手笔记、菜单/字典/集合管理。
+- 待办与归档的关系：待办里「完成」或「删除」会自动写一条到 `work_task`（页面叫「归档任务」），取消完成则撤回；待办日程（`work_schedule`）保持独立，不被替代。
 - 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
 - 候选下一步：待办的提醒与重复任务、拖拽排序、附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。
