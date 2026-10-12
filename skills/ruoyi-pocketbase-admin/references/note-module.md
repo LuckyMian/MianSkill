@@ -25,3 +25,7 @@
 - 想换成 Tiptap/Quill：只需替换 `NoteEditorPane.vue` 的编辑器与 `exec` 调用，`store.saveNote(id, { content, title })` 这层契约不用动。
 - 加「标签/附件/共享」之前先想清楚：Apple 备忘录的标签是正文里的 `#标签`，要真做建议在 `htmlToText` 后正则提取并写入 `tags` 字段（字段已存在，当前未使用）。
 - 列表加载上限 300 条/视图，`-updated` 服务端排序 + 前端按「置顶优先、更新时间倒序」兜底（PocketBase 对 bool 排序不可靠）。
+
+## 图片
+
+粘贴 / 拖拽 / 工具栏选图都会把图片**直传阿里云 OSS**（N1 只存 URL，不占 eMMC）。上传凭证由 PocketBase 钩子 `/api/oss/policy` 签名，配置与坑见 [oss-images.md](oss-images.md)。

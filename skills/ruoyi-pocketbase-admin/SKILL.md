@@ -20,6 +20,7 @@ metadata:
 - 动集合/字段/权限，或列表报「集合不存在」 → [pocketbase-collections.md](references/pocketbase-collections.md)
 - 改「待办事项」（微软 To Do 风格那一页）的交互语义 → [todo-module.md](references/todo-module.md)
 - 改「随手笔记」（Apple 备忘录风格那一页）→ [note-module.md](references/note-module.md)
+- 配/改笔记图片上传（阿里云 OSS 直传、PocketBase 钩子） → [oss-images.md](references/oss-images.md)
 - 发布、验证、回滚、线上排查、迁移到外置盘 → [deploy-n1.md](references/deploy-n1.md)
 - 被问「为什么不用若依/yudao/低代码」，或要重新选型 → [framework-landscape.md](references/framework-landscape.md)
 
