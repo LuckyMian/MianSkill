@@ -14,8 +14,21 @@
 | `work_schedule` | `title` text*、`start_at` date、`type` select(meeting/todo/remind/other)、`done` bool、`location` text、`notes` text | 待办日程 |
 | `work_report` | `title` text*、`period_start` date、`period_end` date、`hours` number、`tags` text、`content` text、`issues` text、`next_plan` text | 工作记录 / 周报 |
 | `work_note` | `title` text*、`tags` text、`content` text | 随手笔记 |
+| `work_todo_list` | `title` text*、`color` select(primary/success/warning/danger/info)、`sort` number | 待办清单 |
+| `work_todo` | `title` text*、`list` relation→work_todo_list（maxSelect 1、cascadeDelete false，可空=未分类）、`due_date` date、`important` bool、`done` bool、`completed_at` date、`my_day` date、`notes` text、`steps` json | 待办事项（微软 To Do 风格，见 [todo-module.md](todo-module.md)） |
 
-（`text*` = 必填。PocketBase 会自动补 `id`/`created`/`updated`。）
+（`text*` = 必填。`id` 由 PocketBase 自动生成，但 **`created` / `updated` 不会自动加**，见下面的坑。）
+
+## 必须显式声明 `created` / `updated`（踩过）
+
+v0.23+ 把 `created` / `updated` 从隐式系统字段改成了**可选的 autodate 字段**：Dashboard 里建集合默认勾选，纯 API 建（就是 `setup-collections.mjs` 这条路）则必须自己写：
+
+```js
+{ name: 'created', type: 'autodate', onCreate: true, onUpdate: false }
+{ name: 'updated', type: 'autodate', onCreate: true, onUpdate: true }
+```
+
+缺失时的表现极具误导性：读取正常，但任何 `sort=-created` / `sort=-updated` 都返回 `HTTP 400 {"message":"Something went wrong while processing your request."}`，界面则显示「读取失败」。`sys_menu`、`sys_dict`、`work_*` 这 8 个集合都已经补上；新写集合定义时别忘了这两个字段（`collection()` 帮助函数已自动追加）。
 
 ## 初始化命令
 
@@ -27,7 +40,12 @@ pnpm setup:pb
 node scripts/setup-collections.mjs --url=http://192.168.1.168:8090 --email=admin@istoreos.lan --password=...
 ```
 
-脚本幂等：集合已存在就跳过；`sys_menu` / `sys_dict` 已有数据就跳过，加 `--force-seed` 才会追加默认菜单与字典。新增字段时不要重跑脚本（它不会改已存在的集合定义），直接在 PocketBase 管理后台 `/_/` 里加字段，或走 `PATCH /api/collections/<name>`。
+脚本是幂等且自愈的：
+
+- 集合不存在就建；已存在则**只补缺失字段**（按字段名比对，`PATCH` 时把已有字段原样回传，绝不改动或删除既有字段），所以给集合加字段后重跑一次即可。
+- 菜单**按 `path` 缺则补**，不会覆盖你在「系统管理 → 菜单配置」里改过的记录；要按默认值整条覆盖才加 `--force-seed`。
+- `sys_dict` 仍只在空表或 `--force-seed` 时灌默认字典。
+- `work_todo` 是两阶段创建：先确保 `work_todo_list` 存在，再用它的集合 id 建 relation 字段。
 
 默认灌入：`sys_menu` 10 条（工作台 / 日常工作 4 个子项 / 系统管理 3 个子项）、`sys_dict` 11 条（`task_status` 4、`task_priority` 3、`schedule_type` 4）。字典的 `color` 取 Element Plus 的标签色名（`primary`/`success`/`warning`/`danger`/`info`），直接决定列表里标签长什么样。
 

@@ -59,3 +59,7 @@ G:\文档\ChatGPT\ruoyi\
 3. 在 PocketBase 建对应集合（见 [pocketbase-collections.md](pocketbase-collections.md)），再到「系统管理 → 菜单配置」加一条记录：`component` 填 `views` 下的相对路径（如 `work/task/Index`）、`path` 填路由地址、`parent` 填父级菜单的 `path`。
 
 第 3 步做完刷新页面即生效，**不需要重新构建前端**。反之如果只改了 schema（字段增减），需要重新构建并发布，因为 schema 在前端代码里。
+
+## 什么时候不用 CrudTable
+
+交互不是「表格 + 对话框」时，写专用视图更合适：`CrudTable` 只提供分页、排序、搜索、对话框表单和 CSV 导出，没有行内勾选、详情面板、分桶分组这些能力。首个先例是待办事项（`views/work/todo` + `components/TodoBoard` + `stores/todo.ts`），它完全绕开 schema，改用 Pinia store 管状态、用 `pb.listRecords` 拼 filter 拉数据，语义细节见 [todo-module.md](todo-module.md)。判断标准：如果用户要的是「一眼扫过 + 就地操作」，就做专用视图；如果是「录入与台账」，就用 schema + CrudTable。

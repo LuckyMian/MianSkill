@@ -18,6 +18,7 @@ metadata:
 
 - 架构、目录地图、配置化 CRUD 引擎、怎么加一个模块 → [architecture.md](references/architecture.md)
 - 动集合/字段/权限，或列表报「集合不存在」 → [pocketbase-collections.md](references/pocketbase-collections.md)
+- 改「待办事项」（微软 To Do 风格那一页）的交互语义 → [todo-module.md](references/todo-module.md)
 - 发布、验证、回滚、线上排查、迁移到外置盘 → [deploy-n1.md](references/deploy-n1.md)
 - 被问「为什么不用若依/yudao/低代码」，或要重新选型 → [framework-landscape.md](references/framework-landscape.md)
 
@@ -28,6 +29,12 @@ metadata:
 3. **菜单与字典是真数据**。侧边栏、路由、下拉选项、标签颜色都来自 `sys_menu` / `sys_dict`；拉取失败时前端退回 `src/config/fallbackMenu.ts` 的内置菜单。改动前先确认当前生效的是哪一种（导航栏右侧用户菜单里有提示）。
 4. **一份 schema 驱动三处**。加字段只改 `src/config/modules/*.ts`，不要在页面里手写表格列或表单控件。
 5. **凭据不落仓库、不落技能**。PocketBase superuser 密码放 `frontend/.env.local`（已被 gitignore）；SSH 是另一套密码。两者都不要写进技能文件或提交到 git。
+6. **日期按「本地墙钟、不带时区」存取**（写 `YYYY-MM-DD 00:00:00`），显示日期用 `pbDateOnly()` 取前 10 位，不要用 `pbDateToLocal()`（会把 `…000Z` 当 UTC 换算，日期时间都 +8 小时）。
+
+## 两个踩过的坑（再犯代价很高）
+
+- **API 建的集合默认没有 `created` / `updated`**。v0.23+ 里它们是可选的 autodate 字段，Dashboard 建集合会默认勾上，纯 API 建要自己声明；缺了它，任何按 `created`/`updated` 排序或读这两个字段的请求都会直接 **HTTP 400**（报错文案是笼统的 `Something went wrong while processing your request.`）。`pnpm setup:pb` 现在会幂等补齐缺失字段，改集合后跑一次即可。
+- **报错别只看前端文案**：400 常见成因就是上面这条、或 filter 里引用了不存在的字段。用 `curl` 直接打 API 定位比看界面快得多。
 
 ## 常用动作
 
@@ -56,6 +63,8 @@ metadata:
 ## 当前状态与待办（截至 2026-10-12）
 
 - 线上：`http://192.168.1.168:8090` 就是本系统；原测试页备份为 `/opt/pocketbase/pb_public/index.backup-*.html`。
-- 数据：`sys_menu` 10 条、`sys_dict` 11 条已灌入；`work_task` / `work_schedule` / `work_report` / `work_note` 均为空表。
-- 遗留：`demo_posts` 是早期测试页留下的空集合，可删；SSH 仍为密码登录（未装公钥，发布会要求输密码）。
-- 候选下一步：附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。
+- 集合：13 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule` / `work_report` / `work_note` / `work_todo_list` / `work_todo`。
+- 数据：`sys_menu` 11 条（待办事项排「日常工作」第一位）、`sys_dict` 11 条；业务表基本为空，待办表按需使用。
+- 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、任务台账、待办日程、工作记录、随手笔记、菜单/字典/集合管理。
+- 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
+- 候选下一步：待办的提醒与重复任务、拖拽排序、附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。

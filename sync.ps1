@@ -355,8 +355,10 @@ $changedEntries = @($entries | Where-Object { $_.Changed })
 foreach ($e in $entries) {
     if ($DryRun) {
         $probe = Copy-SkillDir -Source $e.LocalPath -Destination $e.RepoPath -WhatIfOnly
-        $delta = @($probe.Output | Where-Object { $_ -match '\S' }).Count
-        $state = if (-not $e.RepoExists) { '新增' } elseif ($delta -gt 0) { '有变化' } else { '无变化' }
+        # robocopy 带 /NFL /NDL /NJH /NJS 时输出被压制，用 /L 探针数不出差异；
+        # 变化与否一律用前面的哈希比较结果判定，干跑才可信。
+        $null = $probe
+        $state = if ($e.IsNew) { '新增' } elseif ($e.Changed) { '有变化' } else { '无变化' }
     }
     else {
         $null = Copy-SkillDir -Source $e.LocalPath -Destination $e.RepoPath
