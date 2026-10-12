@@ -48,7 +48,8 @@ node scripts/setup-collections.mjs --url=http://192.168.1.168:8090 --email=admin
 - 集合不存在就建；已存在则**只补缺失字段**（按字段名比对，`PATCH` 时把已有字段原样回传，绝不改动或删除既有字段），所以给集合加字段后重跑一次即可。
 - **select 字段的候选值是唯一例外**：只做并集扩值（给 `kind` 加 `node`/`edge` 就是这么加的），已有值不动；脚本会在「补齐缺失字段」里报告 `kind(扩值:…)`。不加的话新枚举值会被服务端拒。
 - 菜单**按 `path` 缺则补**，不会覆盖你在「系统管理 → 菜单配置」里改过的记录；要按默认值整条覆盖才加 `--force-seed`。
-- `sys_dict` 仍只在空表或 `--force-seed` 时灌默认字典。
+- `sys_dict` 按 **`dict_type` 粒度**补默认值：整类不存在才灌那一类的默认条目，不会覆盖你在「字典配置」里改过的值
+  （2026-10-13 从「整表为空才灌」改过来，否则新增一类字典永远进不去）；`--force-seed` 才会把默认条目原样重灌一遍。
 - 两阶段创建（先建被引用的集合拿到 id，再建带 relation 的表）：`work_todo_list` → `work_todo`、`work_note_folder` → `work_note`、`work_canvas` → `work_canvas_item`。
 
 默认灌入：`sys_menu` 11 条（工作台 / 日常工作 5 个子项 / 系统管理 3 个子项）、`sys_dict` 11 条（`task_status` 4、`task_priority` 3、`schedule_type` 4）。字典的 `color` 取 Element Plus 的标签色名（`primary`/`success`/`warning`/`danger`/`info`），直接决定列表里标签长什么样。

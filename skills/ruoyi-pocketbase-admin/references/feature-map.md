@@ -13,6 +13,7 @@
 | 工作记录 | `/work/report` | `work_report` | schema CRUD | `config/modules/report.ts` |
 | 随手笔记 | `/work/note` | `work_note` / `work_note_folder`（+ 阿里云 OSS） | **专用视图** + store + 服务端钩子 | `views/work/note` + `components/NoteBoard` + `stores/note.ts` |
 | 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布（含连线流程图、全屏专注） | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
+| VPN | `/tools/vpn` | 无库表；地址来自 `sys_dict.vpn_dashboard` + localStorage | 专用视图：地址栏 + iframe 内嵌 mihomo 的 metacubexd 面板 | `views/tools/vpn/Index.vue`，见 [vpn-tools.md](vpn-tools.md) |
 | 菜单配置 | `/system/menu` | `sys_menu` | schema CRUD（schema 写在页面里，因为下拉选项要按库里数据动态生成） | `views/system/menu/Index.vue` |
 | 字典配置 | `/system/dict` | `sys_dict` | schema CRUD | `config/modules/sysDict.ts` |
 | 集合总览 | `/system/collections` | 集合元信息（需 superuser） | 只读诊断页 | `views/system/collections/Index.vue` |
