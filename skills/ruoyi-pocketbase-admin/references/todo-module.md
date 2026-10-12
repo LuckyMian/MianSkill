@@ -38,7 +38,7 @@
 - 归档失败不能吞掉：store 把原因放在 `archiveError`，界面提示「待办本身保留，归档失败」，不要假装成功。
 - 归档是单向的：在「归档任务」页面删记录不会影响待办；待办完成后也不再回到待办列表。
 - `work_todo` 的 `done` / `completed_at` 字段保留但已不再写入（历史兼容 + 过滤防御），所有查询仍带 `done=false`。
-- 待办日程 `work_schedule` 是与归档任务并列的独立模块，别把两者合并。
+- 「待办日程」已下线（用户不再需要）：不要因为看到 `work_schedule` 集合还在就把它挂回菜单；要恢复的话，前端代码在 `views/work/schedule` + `config/modules/schedule.ts`，加一条菜单记录即可。
 
 ## 扩展时的注意点
 
