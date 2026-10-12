@@ -12,6 +12,7 @@
 | 归档任务 | `/work/task` | `work_task` | schema CRUD | `config/modules/task.ts` + `views/work/task/Index.vue`（薄壳） |
 | 工作记录 | `/work/report` | `work_report` | schema CRUD | `config/modules/report.ts` |
 | 随手笔记 | `/work/note` | `work_note` / `work_note_folder`（+ 阿里云 OSS） | **专用视图** + store + 服务端钩子 | `views/work/note` + `components/NoteBoard` + `stores/note.ts` |
+| 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布 | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
 | 菜单配置 | `/system/menu` | `sys_menu` | schema CRUD（schema 写在页面里，因为下拉选项要按库里数据动态生成） | `views/system/menu/Index.vue` |
 | 字典配置 | `/system/dict` | `sys_dict` | schema CRUD | `config/modules/sysDict.ts` |
 | 集合总览 | `/system/collections` | 集合元信息（需 superuser） | 只读诊断页 | `views/system/collections/Index.vue` |
@@ -27,7 +28,7 @@
 | 字典驱动下拉与颜色 | `stores/dict.ts` | `sys_dict` 按 `dict_type` 分组缓存；`optionsOf` / `labelOf` / `colorOf` |
 | 配置化 CRUD | `components/CrudTable` + `config/modules/*.ts` | 一份 schema 驱动查询 / 表格 / 表单，自带分页、排序、批量删除、CSV |
 | 请求层 | `api/pb.ts` | axios 封装；基础地址三级回退（localStorage → `VITE_PB_URL` → 同源）；401 统一登出 |
-| OSS 图片 | `api/oss.ts` + 服务器 `pb_hooks/oss.pb.js` | 浏览器直传 OSS，正文只存 `data-oss-key`，私有桶签名读 |
+| OSS 图片 | `api/oss.ts` + 服务器 `pb_hooks/oss.pb.js` | 浏览器直传 OSS（目录白名单 `notes/`、`canvas/`），正文只存 `data-oss-key`，私有桶签名读；网页图片可让服务端代抓转存（`/api/oss/fetch`） |
 | 日期与格式化 | `utils/format.ts` | `pbDateOnly` / `localDay` / `humanDay` / `toCsv` |
 | 初始化 | `scripts/setup-collections.mjs` | 幂等建集合、补缺失字段、灌默认菜单与字典 |
 | 发布 | `scripts/deploy.mjs` + `deploy-interactive.ps1` | `dist` → `pb_public`，只写不删 + 覆盖前备份 |
@@ -41,7 +42,10 @@
 - 要的是**录入与台账**（表格 + 查询 + 新增/编辑对话框）→ 写一份 `ModuleSchema`，页面就三行壳。
 - 要的是**一眼扫过 + 就地操作**（分栏、分桶、拖拽、自动保存、富文本）→ 专用视图：`views/xxx/Index.vue` 薄壳 + `components/XxxBoard/*` 渲染 + `stores/xxx.ts` 管数据。
 
-`CrudTable` 只覆盖分页/排序/搜索/对话框表单/批量删除/CSV，没有行内勾选、详情面板、分桶分组、就地编辑——硬塞进去会比直接写专用视图更贵。已有两个先例：待办事项、随手笔记。
+`CrudTable` 只覆盖分页/排序/搜索/对话框表单/批量删除/CSV，没有行内勾选、详情面板、分桶分组、就地编辑——硬塞进去会比直接写专用视图更贵。已有三个先例：待办事项、随手笔记、无限画布。
+
+画布这一类还有额外一条判断：**自绘 vs 现成库**。无限画布选了「DOM + CSS transform 自研」（每张图一个绝对定位元素、整体一个 `translate/scale` 层），
+理由是零新依赖、命中测试/右键菜单/文字编辑全部白送，几百张图也够快；代价是缩放手柄、裁剪、吸附这些几何逻辑要自己写（见 [canvas-module.md](canvas-module.md)）。
 
 ### 2. 一份 schema 驱动三处，但记住它的代价
 

@@ -2,7 +2,7 @@
 
 服务端：PocketBase **0.40.5**（`http://192.168.1.168:8090`）。superuser 登录用 `POST /api/collections/_superusers/auth-with-password`，之后所有请求带 `Authorization: <token>`。
 
-## 九个业务集合
+## 十一个业务集合
 
 由 `frontend/scripts/setup-collections.mjs` 创建，权限统一为「登录用户可读写」（`@request.auth.id != ""`，superuser 天然全权限）：
 
@@ -17,8 +17,10 @@
 | `work_note` | `title` text（可选，由正文首行自动派生）、`tags` text、`content` **editor**（富文本 HTML）、`pinned` bool、`folder` relation→work_note_folder（可空=未分类）、`trashed` bool、`trashed_at` date | 随手笔记（Apple 备忘录风格，见 [note-module.md](note-module.md)） |
 | `work_todo_list` | `title` text*、`color` select(primary/success/warning/danger/info)、`sort` number | 待办清单 |
 | `work_todo` | `title` text*、`list` relation→work_todo_list（maxSelect 1、cascadeDelete false，可空=未分类）、`due_date` date、`important` bool、`done` bool、`completed_at` date、`my_day` date、`notes` text、`steps` json | 待办事项（微软 To Do 风格，见 [todo-module.md](todo-module.md)） |
+| `work_canvas` | `title` text*、`theme` select(dark/light)、`viewport` json、`sort` number、`trashed` bool、`trashed_at` date | 无限画布的板（一块板 = 一份布局，视口也存在这里，见 [canvas-module.md](canvas-module.md)） |
+| `work_canvas_item` | `canvas` relation→work_canvas（可空、cascadeDelete false）、`kind` select(image/text/frame)、`oss_key` text、`source_url` text、`x`/`y`/`w`/`h`/`rotation`/`z` number、`crop` json、`flip_h`/`flip_v` bool、`color` text、`text` text、`font_size` number、`frame_id` text、`deleted` bool、`deleted_at` date | 画布上的元素（图片/文字/分组框）；坐标是世界坐标，`frame_id` 表示归属的分组框 |
 
-（`text*` = 必填。`id` 由 PocketBase 自动生成，但 **`created` / `updated` 不会自动加**，见下面的坑。表里 9 张都由 `setup-collections.mjs` 定义；`work_todo`、`work_note` 因为是 relation 字段，走两阶段创建。）
+（`text*` = 必填。`id` 由 PocketBase 自动生成，但 **`created` / `updated` 不会自动加**，见下面的坑。表里 11 张都由 `setup-collections.mjs` 定义；`work_todo`、`work_note`、`work_canvas_item` 因为有 relation 字段，走两阶段创建。）
 
 ## 必须显式声明 `created` / `updated`（踩过）
 
@@ -46,9 +48,9 @@ node scripts/setup-collections.mjs --url=http://192.168.1.168:8090 --email=admin
 - 集合不存在就建；已存在则**只补缺失字段**（按字段名比对，`PATCH` 时把已有字段原样回传，绝不改动或删除既有字段），所以给集合加字段后重跑一次即可。
 - 菜单**按 `path` 缺则补**，不会覆盖你在「系统管理 → 菜单配置」里改过的记录；要按默认值整条覆盖才加 `--force-seed`。
 - `sys_dict` 仍只在空表或 `--force-seed` 时灌默认字典。
-- `work_todo` 是两阶段创建：先确保 `work_todo_list` 存在，再用它的集合 id 建 relation 字段。
+- 两阶段创建（先建被引用的集合拿到 id，再建带 relation 的表）：`work_todo_list` → `work_todo`、`work_note_folder` → `work_note`、`work_canvas` → `work_canvas_item`。
 
-默认灌入：`sys_menu` 10 条（工作台 / 日常工作 4 个子项 / 系统管理 3 个子项）、`sys_dict` 11 条（`task_status` 4、`task_priority` 3、`schedule_type` 4）。字典的 `color` 取 Element Plus 的标签色名（`primary`/`success`/`warning`/`danger`/`info`），直接决定列表里标签长什么样。
+默认灌入：`sys_menu` 11 条（工作台 / 日常工作 5 个子项 / 系统管理 3 个子项）、`sys_dict` 11 条（`task_status` 4、`task_priority` 3、`schedule_type` 4）。字典的 `color` 取 Element Plus 的标签色名（`primary`/`success`/`warning`/`danger`/`info`），直接决定列表里标签长什么样。
 
 注意「系统管理 → 集合总览」页里的 `expected` 清单只列了 `sys_menu` / `sys_dict` / `work_task` / `work_schedule` / `work_report` / `work_note` 六项，**没跟上后来的 `work_note_folder` / `work_todo_list` / `work_todo`**，判断缺失以脚本为准。
 
@@ -73,6 +75,6 @@ node scripts/setup-collections.mjs --url=http://192.168.1.168:8090 --email=admin
 
 ## 现网数据现状（2026-10-12）
 
-16 个集合：6 个 PocketBase 内置（`_superusers` / `users` / `_mfas` / `_otps` / `_externalAuths` / `_authOrigins`）、`demo_posts`（早期测试页残留的空集合，可删）、以及上面 9 个业务集合。`sys_menu` 实测 11 条（脚本默认 10 条，另有 1 条是在「菜单配置」里手工加的）、`sys_dict` 11 条，业务表基本为空、待办按需使用。
+原 16 个集合：6 个 PocketBase 内置（`_superusers` / `users` / `_mfas` / `_otps` / `_externalAuths` / `_authOrigins`）、`demo_posts`（早期测试页残留的空集合，可删）、以及上面当时那 9 个业务集合；接入无限画布后 +2（`work_canvas` / `work_canvas_item`）= 18 个。`sys_dict` 11 条，业务表基本为空、待办按需使用。
 
 查现场实际数量：`GET /api/collections?perPage=100` 与 `GET /api/collections/sys_menu/records?perPage=200`（带 superuser token）。没带 token 只能看 `/api/health`。

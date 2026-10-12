@@ -29,12 +29,35 @@
 - 上传凭证：10 分钟有效、限定 `notes/` 前缀、限定大小；浏览器拿不到 AK/SK。
 - 前端把 >1.5MB 的图先压到 1600px 再传（`shrinkIfNeeded`）。
 
+### 上传目录白名单（接入无限画布时加的）
+
+`POST /api/oss/policy` 接受可选的 `dir`，**只认白名单**：`notes/`（默认，笔记用，行为不变）与 `canvas/`（无限画布用），传别的值直接拒绝。
+key 仍是 `<dir><年>/<月>/<16位随机>.<ext>`，有效期/大小限制照旧；白名单校验必须在钩子里自己写，别把 `dir` 原样拼进 policy 条件。
+前端对应 `requestUploadPolicy(ext, dir)` 与 `uploadImageToOss(file, { dir, prepare })`：`prepare: 'canvas'` 走 `shrinkForCanvas`
+（>2560px 或 >6MB 才缩、PNG/WebP 输出 PNG 保透明、GIF/SVG 原样），不传则是笔记那套 1600px 压缩。
+
+### `POST /api/oss/fetch`：把网页上的图片转存到 OSS
+
+浏览器的 CORS 决定了「把网页图片直接拖进画布」不可能在前端完成下载，所以让服务端代抓：
+
+```
+POST /api/oss/fetch  { url }   →   { key, signedUrl }       （需登录）
+```
+
+流程：校验 `http`/`https` → **拒绝内网地址**（`localhost`、`127.`、`10.`、`192.168.`、`172.16-31.`、`169.254.`）→
+`$http.send` 抓取（timeout 20s）→ 要求 `Content-Type: image/*` → 长度 ≤10MB →
+用现成的 V1 签名 `PUT` 写进 `canvas/<年>/<月>/<随机>.<ext>` → 返回 key 与签名 GET 地址。
+失败要把原因返回前端（钩子默认只有笼统 400，没法排查）；前端 `fetchRemoteImage()` 会在消息里补「需要服务端提供该路由」的提示。
+注意 `$http.send` 的 `body` 是**字节数组**，`headers` 的键大小写不统一，判内容类型时统一转小写再取值。
+
 ## 服务端钩子的四个硬约束（本版本 PocketBase 0.40.5 实测）
 
 1. **处理器看不到文件级作用域**：`routerAdd` 回调在每个请求时按源码重建，文件里的 `const`/`function`、乃至 `globalThis` 在回调里都是 `undefined`（实测 `typeof OSS_CONFIG === 'undefined'`、`ReferenceError: HELPER_KEY is not defined`）。唯一可靠的桥是 **`$app.store()`**：文件级 `$app.store().set('oss_upload_helpers', {…})`，回调里 `$app.store().get('oss_upload_helpers')`；连 key 都必须用字面量。
 2. **JSVM 没有 `require` 模块**（`crypto/hmac`、`encoding/base64`、`os`、`fs` 全是 `Invalid module`），只有 `$security`（md5/sha256/sha512/hs256/hs512/equal/randomString…）。OSS 的 V1 签名要 HMAC-SHA1，所以钩子里自带纯 JS 的 UTF-8 / SHA-1 / HMAC-SHA1 / Base64（已与 Node crypto 对拍一致）。
 3. **`$os.readFile` 返回字节对象**，且**读不存在的文件会触发 Go 层 panic**（JS try/catch 拦不住，整个路由返回 400）。所以配置直接写在钩子文件的 `OSS_CONFIG` 里，不读外部 JSON。`$os.getenv` 对不存在的变量安全（返回 ''），可作环境变量覆盖。
 4. 钩子里的错误默认只变成笼统的 400，排查时要在回调里 `try/catch` 并把 `String(err)` 返回来定位。
+
+（`GET /api/oss/status` 返回的 `dir` 字段就是当前默认上传前缀，改完钩子 `curl` 一下即可确认生效。）
 
 ## bucket 侧配置（已用 API 完成，可复核）
 
