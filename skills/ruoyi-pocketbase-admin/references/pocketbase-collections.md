@@ -18,7 +18,7 @@
 | `work_todo_list` | `title` text*、`color` select(primary/success/warning/danger/info)、`sort` number | 待办清单 |
 | `work_todo` | `title` text*、`list` relation→work_todo_list（maxSelect 1、cascadeDelete false，可空=未分类）、`due_date` date、`important` bool、`done` bool、`completed_at` date、`my_day` date、`notes` text、`steps` json | 待办事项（微软 To Do 风格，见 [todo-module.md](todo-module.md)） |
 | `work_canvas` | `title` text*、`theme` select(dark/light)、`viewport` json、`sort` number、`trashed` bool、`trashed_at` date | 无限画布的板（一块板 = 一份布局，视口也存在这里，见 [canvas-module.md](canvas-module.md)） |
-| `work_canvas_item` | `canvas` relation→work_canvas（可空、cascadeDelete false）、`kind` select(image/text/frame)、`oss_key` text、`source_url` text、`x`/`y`/`w`/`h`/`rotation`/`z` number、`crop` json、`flip_h`/`flip_v` bool、`color` text、`text` text、`font_size` number、`frame_id` text、`deleted` bool、`deleted_at` date | 画布上的元素（图片/文字/分组框）；坐标是世界坐标，`frame_id` 表示归属的分组框 |
+| `work_canvas_item` | `canvas` relation→work_canvas（可空、cascadeDelete false）、`kind` select(image/text/frame/node/edge)、`oss_key` text、`source_url` text、`x`/`y`/`w`/`h`/`rotation`/`z` number、`crop` json、`flip_h`/`flip_v` bool、`color` text、`text` text、`font_size` number、`frame_id` text、`from_id`/`to_id`/`from_anchor`/`to_anchor` text、`edge_style` select(straight/curve/elbow)、`arrow` select(end/both/none)、`deleted` bool、`deleted_at` date | 画布上的元素（图片/文字/分组框/流程节点/连线）；坐标是世界坐标，`frame_id` 表示归属的分组框，`from_id`/`to_id` 是连线的两端元素 |
 
 （`text*` = 必填。`id` 由 PocketBase 自动生成，但 **`created` / `updated` 不会自动加**，见下面的坑。表里 11 张都由 `setup-collections.mjs` 定义；`work_todo`、`work_note`、`work_canvas_item` 因为有 relation 字段，走两阶段创建。）
 
@@ -46,6 +46,7 @@ node scripts/setup-collections.mjs --url=http://192.168.1.168:8090 --email=admin
 脚本是幂等且自愈的：
 
 - 集合不存在就建；已存在则**只补缺失字段**（按字段名比对，`PATCH` 时把已有字段原样回传，绝不改动或删除既有字段），所以给集合加字段后重跑一次即可。
+- **select 字段的候选值是唯一例外**：只做并集扩值（给 `kind` 加 `node`/`edge` 就是这么加的），已有值不动；脚本会在「补齐缺失字段」里报告 `kind(扩值:…)`。不加的话新枚举值会被服务端拒。
 - 菜单**按 `path` 缺则补**，不会覆盖你在「系统管理 → 菜单配置」里改过的记录；要按默认值整条覆盖才加 `--force-seed`。
 - `sys_dict` 仍只在空表或 `--force-seed` 时灌默认字典。
 - 两阶段创建（先建被引用的集合拿到 id，再建带 relation 的表）：`work_todo_list` → `work_todo`、`work_note_folder` → `work_note`、`work_canvas` → `work_canvas_item`。

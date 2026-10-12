@@ -4,14 +4,16 @@
 `src/components/CanvasBoard/`（`CanvasSidebar` / `CanvasStage` / `CanvasItemView` / `CanvasToolbar` / `CanvasContextMenu`）+
 `src/stores/canvas.ts`（数据、几何、撤销、自动保存）。路由 `/work/canvas`，菜单名「无限画布」。
 
-一块画布 = 一份布局：能放**图片 / 文字便签 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存。
+一块画布 = 一份布局：能放**图片 / 文字便签 / 流程节点 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存；
+元素之间可以**连线**（流程图），画布支持**全屏/专注模式**。
 
 ## 数据模型
 
 - `work_canvas`：`title`、`theme`(dark/light)、`viewport`(json `{x,y,zoom}`)、`sort`、`trashed`、`trashed_at`。
-- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/frame) + `oss_key`/`source_url` +
+- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/frame/node/edge) + `oss_key`/`source_url` +
   几何（`x`/`y`/`w`/`h`/`rotation`/`z`）+ `crop`(json 归一化) + `flip_h`/`flip_v` + `color`/`text`/`font_size` +
-  `frame_id`（所属分组框 id，空=顶层）+ `deleted`/`deleted_at`。
+  `frame_id`（所属分组框 id，空=顶层）+ `deleted`/`deleted_at` +
+  连线专用 `from_id`/`to_id`（两端元素 id）/`from_anchor`/`to_anchor`/`edge_style`/`arrow`。
 
 两个要点：
 
@@ -19,6 +21,22 @@
 2. **分组框是容器**：子元素靠 `frame_id` 归属（不是靠几何包含），拖动框的标题栏会带上 `frame_id` 指向它的元素一起位移；
    缩放框时子元素同比例位移 + 缩放（文字项同步改 `font_size`）。拖动结束按「中心点落在哪个框里」重新归属，
    所以拖进/拖出框是自然发生的，不需要额外的挂载操作。不支持框套框。
+
+## 流程图：流程节点 + 连线
+
+- **流程节点**（`kind='node'`）＝ 圆角框 + 居中文字，工具栏「流程节点」创建并直接进入编辑。缩放手柄只改框大小、**不改字号**（流程图的框和字是两件事）。
+- **连线**（`kind='edge'`）不存坐标，只存 `from_id`/`to_id`：端点每次渲染时从**元素当前外框**算出来，所以元素一移动线就跟着走，不需要同步逻辑。
+  - 连接点自动取「两中心连线最短的一对边」（`autoSides()`）；也可以指定 `top/right/bottom/left`。
+    连到旋转过的元素时，端点用 `anchorPoint()` 把局部点按元素 rotation 绕中心旋转回世界坐标（翻转不影响矩形边界，不用处理）。
+  - 线型三种：`straight` 直线 / `curve` 三次贝塞尔（`bend = clamp(dist*0.4, 30, 160)`，控制点沿两端法线外推）/ `elbow` 正交折线（按长短轴决定先横后竖）。
+    箭头三角形是**自己算的多边形**（`arrowTriangle()`），没用 SVG `marker`——marker 的 `fill` 不能可靠继承 `context-stroke`，自己画颜色可控。
+  - 渲染在**世界层里的一个 SVG** 里，`viewBox` 直接取「所有连线两端元素的外框并集 + padding」，于是 path 的 `d` 可以用世界坐标原样写，
+    线宽/箭头/连接点大小一律除以 `zoom`（屏幕尺寸恒定，和手柄一个套路）。
+  - 命中测试：每条线再画一条 `stroke: transparent`、`stroke-width: 16/zoom`、`pointer-events: stroke` 的粗线，带 `data-item-id`，于是既有的「点选/右键菜单」逻辑直接复用。
+  - 「线上文字」复用元素文字的编辑流程：`text` 字段 + 双击进编辑，只是编辑框定位到线的中点（`geometry.label`）。
+  - **删元素要连带删线**：`softDelete()` 会把 `connectedEdges()` 一起标删（同一批 patch、同一条撤销记录），否则会留下悬空的线。
+  - Ctrl+D 复制连线时把端点**重映射到副本**（`idMap`），端点没一起复制的保持原指向。
+  - 连线不参与框选、对齐、微调、分组归属（`itemsInRect()`、`align()`、`nudge()`、`adoptIntoFrames()` 都显式排除 `edge`）。
 
 ## 图片链路（复用笔记那套 OSS 直传，多了目录白名单）
 
@@ -57,6 +75,9 @@
 | 复制 / 删除 | Ctrl+D 复制（偏移 20px）、Delete/Backspace 软删除 |
 | 裁剪 | 右键「裁剪…」进入，拖 8 个手柄，Enter 或点空白确认、Esc 取消 |
 | 文字 | 双击空白新建、双击文字项编辑；编辑时若缩放≠1 会先临时切到 100% 便于输入，结束恢复 |
+| 连线 | 鼠标悬停元素出现 4 个连接点 → 从连接点拖到另一个元素（或它的连接点）松手；也可选中两个元素后右键「给选中的两个元素连线」 |
+| 连线样式 | 选中连线右键：直线/曲线/折线、箭头（末端/两端/无）、颜色板、「编辑线上文字」 |
+| 全屏 | 工具栏最右的「全屏」按钮：浏览器全屏 + 专注模式（收起侧栏/顶栏/标签栏），Esc 退出 |
 
 细节坑：
 
@@ -71,6 +92,11 @@
   元素与裁剪浮层里的 `<img>` 一律 `draggable="false"`；`.canvas-stage` 上还要 `touch-action: none`。
 - **别让新画布排在最后就找不到**：新建画布 `sort` 取 max+1，会排在列表末尾，而 `init()` 原来只打开 `canvases[0]`，
   于是刷新后会跳到另一块板。现在用 `localStorage.pb_canvas_last` 记住上次打开的板（不存在才退回首块）。
+- **连接点要在裁剪/编辑文字时藏起来（踩过）**：连接点圆点渲染在裁剪手柄同一位置、且 DOM 更靠后，会抢走裁剪手柄的 pointerdown
+  （表现：进裁剪模式后拖手柄没反应、外框不变）。`anchorHost` 在 `croppingId`/`editingId` 有值时直接返回 null。
+- **悬停状态别被连接点自己打断**：指针移到圆点上时 `closest('[data-item-id]')` 是空的（圆点是元素外的兄弟节点），
+  会把 `hoveredId` 清掉、圆点当场消失，连线手势也就起不来。两条修正：`onPointerOver` 里把 `data-anchor-item` 也当作悬停目标；
+  连线手势进行中（`connectState`）不改悬停目标、并把连接点固定在起点元素上。
 
 ## 保存策略
 

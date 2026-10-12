@@ -12,7 +12,7 @@
 | 归档任务 | `/work/task` | `work_task` | schema CRUD | `config/modules/task.ts` + `views/work/task/Index.vue`（薄壳） |
 | 工作记录 | `/work/report` | `work_report` | schema CRUD | `config/modules/report.ts` |
 | 随手笔记 | `/work/note` | `work_note` / `work_note_folder`（+ 阿里云 OSS） | **专用视图** + store + 服务端钩子 | `views/work/note` + `components/NoteBoard` + `stores/note.ts` |
-| 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布 | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
+| 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布（含连线流程图、全屏专注） | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
 | 菜单配置 | `/system/menu` | `sys_menu` | schema CRUD（schema 写在页面里，因为下拉选项要按库里数据动态生成） | `views/system/menu/Index.vue` |
 | 字典配置 | `/system/dict` | `sys_dict` | schema CRUD | `config/modules/sysDict.ts` |
 | 集合总览 | `/system/collections` | 集合元信息（需 superuser） | 只读诊断页 | `views/system/collections/Index.vue` |
@@ -29,6 +29,7 @@
 | 配置化 CRUD | `components/CrudTable` + `config/modules/*.ts` | 一份 schema 驱动查询 / 表格 / 表单，自带分页、排序、批量删除、CSV |
 | 请求层 | `api/pb.ts` | axios 封装；基础地址三级回退（localStorage → `VITE_PB_URL` → 同源）；401 统一登出 |
 | OSS 图片 | `api/oss.ts` + 服务器 `pb_hooks/oss.pb.js` | 浏览器直传 OSS（目录白名单 `notes/`、`canvas/`），正文只存 `data-oss-key`，私有桶签名读；网页图片可让服务端代抓转存（`/api/oss/fetch`） |
+| 亮/暗主题 | `stores/ui.ts` + `style.css` 的 `--app-*` 变量 + Element Plus 官方暗色变量 | `<html>.dark` 一切，全站换肤；专注模式（画布全屏）也在 ui store，见 [theme.md](theme.md) |
 | 日期与格式化 | `utils/format.ts` | `pbDateOnly` / `localDay` / `humanDay` / `toCsv` |
 | 初始化 | `scripts/setup-collections.mjs` | 幂等建集合、补缺失字段、灌默认菜单与字典 |
 | 发布 | `scripts/deploy.mjs` + `deploy-interactive.ps1` | `dist` → `pb_public`，只写不删 + 覆盖前备份 |
@@ -72,6 +73,9 @@
 ### 7. 初始化脚本三原则：幂等、自愈、显式覆盖
 
 `pnpm setup:pb` 可以随时重跑：集合不存在才建，已存在只补缺失字段（按字段名比对、把既有字段原样回传，绝不改删）；菜单按 `path` 缺则补，不覆盖你在界面上改过的记录；字典仅在空表时灌。只有显式加 `--force-seed` 才按默认值覆盖。所以「加集合字段」的流程是改脚本 → 重跑即可，不用手点 Dashboard。
+
+**唯一例外是 select 字段的候选值**：只做「并集扩值」（比如给 `work_canvas_item.kind` 加 `node`/`edge`），已有的值一个不动、顺序也保留。
+不这么做的话，新写的枚举值会被服务端直接拒（表现是插入记录 400，提示某个 select 值非法）。
 
 新集合务必带 `created` / `updated`（`collection()` 帮助函数已自动追加），否则任何按它们排序的请求直接 400。
 
