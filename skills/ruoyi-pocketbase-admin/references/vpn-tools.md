@@ -60,9 +60,15 @@ nginx -t -c /etc/nginx/uci.conf                       # 语法检查
 ## 常用维护动作
 
 ```sh
-# 改 Basic Auth 密码（用户名 admin）
+# 改 nginx 入口账号密码（用户名 admin）——只动这一处，不用碰 OpenClash
 openssl passwd -apr1 '新密码' > /tmp/h && printf 'admin:%s\n' "$(cat /tmp/h)" > /etc/nginx/conf.d/vpn.htpasswd && rm -f /tmp/h
 chmod 600 /etc/nginx/conf.d/vpn.htpasswd && /etc/init.d/nginx reload
+
+# 注意区分两串密码：
+#   nginx 入口密码（浏览器弹框要输的）只在 vpn.htpasswd 里，随便改；
+#   mihomo 的 secret 是 nginx 注入上游用的，还写在播种页里给 WebSocket 当 ?token=，
+#   改它要同时改三处：OpenClash 设置（dashboard_password）、vpn.conf 的 Bearer、seed/index.html 的 secret。
+# 改完入口密码后，浏览器可能还拿旧密码重试 → 再弹一次框输新密码即可（或在浏览器里删掉该站点的密码记录）。
 
 # 加 TLS（外网访问建议）：需要真证书（自签会被浏览器拦），在 vpn.conf 的 server 里加
 #   listen 9443 ssl;  ssl_certificate /path/fullchain.pem;  ssl_certificate_key /path/privkey.pem;
