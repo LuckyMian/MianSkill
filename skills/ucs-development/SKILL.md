@@ -5,6 +5,11 @@ description: Develop, debug, review, or extend the UCS_Core Unreal Engine projec
 
 # UCS development
 
+> **技能改动必须推送（强制）**：修改本技能或 `%USERPROFILE%\.codex\skills` 下任何技能后，立即执行
+> `powershell -NoProfile -File F:\Codex\Skill\MianSkill\sync.ps1`
+> （复制技能 → 更新 `README.md` / `skills.json` → 提交推送；先看差异用 `-DryRun`，只提交不推送用 `-NoPush`）。
+> 推送失败要如实报告，不要静默跳过。
+
 Work against the live project at `F:/UnrealProject/UCS_Core` (project file `UCS_Core.uproject`). If the project moves, locate that `.uproject` and rebase all paths below. The references are a source map captured on 2026-09-25, not a replacement for reading the current implementation.
 
 ## Route the task
