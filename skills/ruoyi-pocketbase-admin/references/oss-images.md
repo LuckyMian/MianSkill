@@ -53,10 +53,19 @@
 
 ## 删除笔记里的图片 → OSS 同步回收（已实现）
 
+### 上传/删除都以「保存」为准（2026-10-12 调整）
+
+- 贴图/拖图/选图：**先只做本地预览**（`blob:` + `data-oss-file-id`），底部提示"N 张图片待上传，点「保存」提交"。
+- 点编辑器右下角的**保存**按钮：先把待上传图片传到 OSS（`<img>` 换成 `data-oss-key` + 签名地址）→ 正文存库 → 回收本次被删掉的图片，并弹出可见反馈（如"已保存：上传 1 张图片，删除 1 张已移除的图片"）。
+- **文字自动保存仍在**，但有待上传图片时会让位（否则会把 `blob:` 预览地址写进正文，刷新变坏图）；切换笔记/离开页面会强制落盘（`flush(true)`），并有 `beforeunload` 拦截提醒。
+- ⚠️ 踩过的坑：`queueSave()` 里**不要**把 `saving` 置 true——`el-button :loading` 会连带禁用按钮，用户每次敲完字再点「保存」都点不动，表现就是"保存/删除没反应"。
+- ⚠️ `ElMessage` 默认 3 秒消失，E2E 断言要用**轮询**捕获提示，别用固定 sleep。
+
 - **触发点**：笔记**保存**时对比保存前后正文里的 `data-oss-key`，不再被引用的 key 调 `POST /api/oss/delete` 回收；另外"刚上传、还没保存就被删掉"的（粘了又删）会被 `pendingUploads` 当成孤儿一起回收。
 - **删除方式**（钩子 `OSS_CONFIG.deleteMode`）：
-  - `'trash'`（默认）：先 CopyObject 到 `trash/<原 key>` 再删原件 → 可恢复；
-  - `'hard'`：直接物理删除，不可恢复。
+  - `'hard'`（**当前线上默认**）：直接物理删除，阿里云控制台立刻看不到文件；
+  - `'trash'`：先 CopyObject 到 `trash/<原 key>` 再删原件 → 可恢复（配合已配好的 30 天生命周期规则清理）。
+  - 换成 trash 的动机只有一个：误删可恢复；代价是空间不会立刻释放。
 - **整条笔记移入「最近删除」不回收图片**（笔记还能恢复）；只有**彻底删除**才回收它引用的所有图片。
 - bucket 上已配生命周期规则：`trash/` 前缀 **30 天自动清理**（`PUT /?lifecycle` 200，`GET /?lifecycle` 可回读确认），所以回收站不会无限增长。
 - 服务端删除要点：JSVM 里 `$http` **只有 `send` 一个方法**；删除用 V1 签名 `DELETE\n\n\n<Date>\n/<bucket>/<key>`，CopyObject 是 `PUT /<bucket>/<trashKey>` 且必须把 `x-oss-copy-source` 计入 `CanonicalizedOSSHeaders`；`$http.send` 返回的 `body` 是**字节数组**，要读文本得自己转字符串。

@@ -28,4 +28,4 @@
 
 ## 图片
 
-粘贴 / 拖拽 / 工具栏选图都会把图片**直传阿里云 OSS**（N1 只存 URL，不占 eMMC）。上传凭证由 PocketBase 钩子 `/api/oss/policy` 签名，配置与坑见 [oss-images.md](oss-images.md)。
+粘贴 / 拖拽 / 工具栏选图**先在编辑器里本地预览**，点右下角「保存」才把图片传到阿里云 OSS，同时回收正文里被删掉的图片（N1 只存 URL，不占 eMMC）。上传凭证与删除都由 PocketBase 钩子签名，配置与坑见 [oss-images.md](oss-images.md)。
