@@ -182,9 +182,19 @@ function Get-SkillFrontmatter {
 
 function Invoke-RepoGit {
     param([string[]]$GitArgs)
-    # 全局 git 配置里可能挂着不可用的 http 代理，这里统一直连，避免同步失败
-    $output = & git -C $RepoRoot -c http.proxy= -c https.proxy= @GitArgs 2>&1
-    $code = $LASTEXITCODE
+    # git 的警告（例如 core.autocrlf 的 LF/CRLF 提示）会写到 stderr，
+    # 在 PowerShell 5.1 的 Stop 模式下会被当成终止错误从而中断同步；
+    # 这里局部降级为 Continue，成败一律以退出码判断。
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        # 全局 git 配置里可能挂着不可用的 http 代理，这里统一直连，避免同步失败
+        $output = & git -C $RepoRoot -c http.proxy= -c https.proxy= @GitArgs 2>&1
+        $code = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
     return [pscustomobject]@{ Output = @($output); ExitCode = $code }
 }
 

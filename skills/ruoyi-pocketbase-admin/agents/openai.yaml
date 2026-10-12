@@ -1,0 +1,4 @@
+interface:
+  display_name: "RuoYi PocketBase Work Console"
+  short_description: "RuoYi-style configurable admin on PocketBase"
+  default_prompt: "Use $ruoyi-pocketbase-admin to extend or deploy the daily-work console frontend."
