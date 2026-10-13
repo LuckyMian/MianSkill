@@ -9,7 +9,7 @@
 | 登录 | `/login` | `_superusers` / `users` | 专用页 | `views/login/Index.vue` |
 | 工作台 | `/dashboard` | 跨 4 张表聚合 | 只读聚合页（勾选待办复用 todoStore） | `views/dashboard/Index.vue` |
 | 待办事项 | `/work/todo` | `work_todo` / `work_todo_list` | **专用视图** + Pinia store | `views/work/todo` + `components/TodoBoard` + `stores/todo.ts` |
-| 归档任务 | `/work/task` | `work_task` | schema CRUD | `config/modules/task.ts` + `views/work/task/Index.vue`（薄壳） |
+| 归档任务 | `/work/task` | `work_task` | schema CRUD（`canEdit: false`，操作列用 `#row-actions` 插槽加「还回待办」） | `config/modules/task.ts` + `views/work/task/Index.vue`（薄壳 + 行操作） |
 | 工作记录 | `/work/report` | `work_report` | schema CRUD | `config/modules/report.ts` |
 | 随手笔记 | `/work/note` | `work_note` / `work_note_folder`（+ 阿里云 OSS） | **专用视图** + store + 服务端钩子 | `views/work/note` + `components/NoteBoard` + `stores/note.ts` |
 | 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布（含连线流程图、全屏专注） | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
@@ -27,7 +27,7 @@
 | --- | --- | --- |
 | 菜单驱动路由 | `stores/menu.ts` + `router/guard.ts` | `sys_menu` → `buildTree()` → 扁平注册到 Layout；拉不到就退 `config/fallbackMenu.ts` |
 | 字典驱动下拉与颜色 | `stores/dict.ts` | `sys_dict` 按 `dict_type` 分组缓存；`optionsOf` / `labelOf` / `colorOf` |
-| 配置化 CRUD | `components/CrudTable` + `config/modules/*.ts` | 一份 schema 驱动查询 / 表格 / 表单，自带分页、排序、批量删除、CSV |
+| 配置化 CRUD | `components/CrudTable` + `config/modules/*.ts` | 一份 schema 驱动查询 / 表格 / 表单，自带分页、排序、批量删除、CSV；按钮开关 `canEdit`/`canDelete`…、行内专属动作走 `#row-actions` 插槽 |
 | 请求层 | `api/pb.ts` | axios 封装；基础地址三级回退（localStorage → `VITE_PB_URL` → 同源）；401 统一登出 |
 | OSS 图片 | `api/oss.ts` + 服务器 `pb_hooks/oss.pb.js` | 浏览器直传 OSS（目录白名单 `notes/`、`canvas/`），正文只存 `data-oss-key`，私有桶签名读；网页图片可让服务端代抓转存（`/api/oss/fetch`） |
 | 亮/暗主题 | `stores/ui.ts` + `style.css` 的 `--app-*` 变量 + Element Plus 官方暗色变量 | `<html>.dark` 一切，全站换肤；专注模式（画布全屏）也在 ui store，见 [theme.md](theme.md) |
@@ -64,9 +64,11 @@
 
 `scopeFilter()` 产出 PocketBase filter、`loadXxx()` 拉数据、`create/patch/remove` 是通用记录操作、领域动作按业务命名（`completeTodo` / `trashNote` / `deleteFolder`）、`refresh()` / `reset()` 收尾。过滤器里的字符串要转义（`\` 与 `'`），所有查询都显式带上「未删除 / 未完成」这类前置条件，别依赖调用方记得加。
 
-### 5. 破坏性动作：先落账，再删除
+### 5. 破坏性动作：先落账，再删除（反向也要对称）
 
 待办的「完成」和「删除」都是先写 `work_task`（`source_id` 存来源待办 id 做幂等键，重复触发只更新同一条），写成功才 `DELETE` 原记录；归档失败就保留待办并把原因放进 `archiveError` 显示出来。**不要为了「删干净」把失败吞掉**——宁可留下一条待办，也不要丢数据。同类规则：删除清单先把清单下的待办移到未分类（relation 是 `cascadeDelete=false`，前端必须自己兜），整条笔记进「最近删除」不回收图片，只有彻底删除才回收。
+
+反向动作照抄同一个套路，只把顺序倒过来：归档页的「还回待办」先建 `work_todo`，成功后才删 `work_task`；建待办失败就保留归档记录（`todoStore.restoreTaskToTodo()`，见 [todo-module.md](todo-module.md)）。
 
 ### 6. 日期一律「本地墙钟、不带时区」
 

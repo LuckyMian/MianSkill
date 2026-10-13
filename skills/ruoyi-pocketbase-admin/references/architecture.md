@@ -38,6 +38,20 @@ G:\文档\ChatGPT\ruoyi\
 
 `FieldSchema` 常用键：`key`（PocketBase 字段名）、`label`、`type`（`text`/`textarea`/`number`/`select`/`date`/`datetime`/`bool`/`tags`/`editor`/`password`）、`dict`（字典类型，优先于 `options`）、`options`、`inSearch`/`inTable`/`inForm`、`searchAll`（参与顶部关键字模糊搜索，多个字段用 `||` 拼）、`width`/`minWidth`、`sortable`、`default`、`format`、`span`、`filterable`/`allowCreate`/`multiple`。
 
+`ModuleSchema` 上的开关：`canCreate` / `canEdit` / `canDelete` / `canExport` 控制工具栏与操作列按钮（`canEdit: false` 就是不提供编辑，例如归档页），`actionWidth` 调操作列宽度（默认 140）。
+
+**页面专属的行内动作走 `#row-actions` 插槽**（作用域里给 `row`，渲染在「编辑/删除」之前）；表格实例通过 `defineExpose` 暴露 `refresh()`，增删数据后自己刷新：
+
+```vue
+<CrudTable ref="tableRef" :schema="taskSchema">
+  <template #row-actions="{ row }">
+    <el-button link type="primary" @click="restoreToTodo(row)">还回待办</el-button>
+  </template>
+</CrudTable>
+```
+
+操作列里的按钮统一包在 `.crud-actions`（flex 单行、用 `gap` 排版）里。**不要靠 `el-button + el-button` 的 `margin-left` 撑开间距**：窄列里两个带图标的链接按钮会换行，看上去就是「操作列没对齐」；按钮多、标签长时记得把 `schema.actionWidth` 调大。
+
 ## 菜单与字典机制
 
 1. `stores/menu.ts` 拉 `sys_menu`（`perPage: 200`，按 `sort` 排序）→ `buildTree()` 按 `parent`（存父级 `path`，顶级为空）建树 → `flatLeaves()` 取叶子。

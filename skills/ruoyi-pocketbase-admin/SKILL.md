@@ -77,7 +77,7 @@ metadata:
 - 数据：`sys_menu` 13 条（含「无限画布」「工具 → VPN」）、`sys_dict` 12 条（多一条 `vpn_dashboard` 地址预设）；业务表基本为空，待办/画布按需使用。
 - 已上线功能：工作台、待办事项（微软 To Do 风格 v1）、归档任务、工作记录、随手笔记（Apple 备忘录风格）、**无限画布（PureRef 风格参考板：图片/文字/流程节点/分组框 + 连线流程图 + 全屏专注 + 手机触摸手势，见 [canvas-module.md](canvas-module.md)）**、**工具 → VPN（内嵌 mihomo/metacubexd 面板，地址可配，见 [vpn-tools.md](vpn-tools.md)）**、**全站亮/暗主题**（顶栏切换，见 [theme.md](theme.md)）、**手机端适配**（≤900px 外壳抽屉化 + 画布双指缩放/长按菜单，见 [mobile.md](mobile.md)）、菜单/字典/集合管理。
 - OSS 钩子（`/opt/pocketbase/pb_hooks/oss.pb.js`，2026-10-13 更新，旧版备份在同级 `oss.pb.js.bak-20261013`）：上传目录白名单 `notes/` + `canvas/`，新增 `/api/oss/fetch` 网页图片抓取代理；改动细节与 JSVM 限制见 [oss-images.md](oss-images.md)。
-- 待办与归档的关系：待办里「完成」或「删除」都会**先写入 `work_task`（「归档任务」）再从待办移除**，所以待办页只留未完成的事，没有「已完成」视图；归档失败时待办会被保留，不会丢数据。
+- 待办与归档是双向的：待办里「完成」或「删除」都会**先写入 `work_task`（「归档任务」）再从待办移除**，所以待办页只留未完成的事，没有「已完成」视图；归档失败时待办会被保留，不会丢数据。反过来，归档页操作列上的**「还回待办」**会把一条归档记录还原成待办（先建待办、成功后再删归档记录），归档页因此不再提供「编辑」（要改就还回待办改完再归档）。
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
 - 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
 - 候选下一步：待办的提醒与重复任务、拖拽排序、附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。
