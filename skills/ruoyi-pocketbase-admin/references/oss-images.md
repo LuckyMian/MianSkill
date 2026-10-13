@@ -78,7 +78,7 @@ POST /api/oss/fetch  { url }   →   图片字节本身（Content-Type 保持 im
 
 ## bucket 侧配置（已用 API 完成，可复核）
 
-- **CORS**：`PUT /?cors`（签名带 Content-MD5/Content-Type）→ 200 ✔。规则允许来源 `http://192.168.1.168:8090`、`http://localhost:5173`，方法 POST/GET/HEAD，Header `*`。**不加 CORS 浏览器直传会被拦。**
+- **CORS**：`PUT /?cors`（签名带 Content-MD5/Content-Type）→ 200 ✔。规则允许来源 `http://192.168.1.168:8090`、`http://localhost:5173`、`http://luckymian.xyz:18090`（2026-10-13 补），方法 POST/GET/HEAD，Header `*`。**不加 CORS 浏览器直传会被拦。**
 - **公共读：做不到，也不必要**。`PUT /?policy` → `Put public bucket policy is not allowed`；`PUT /?acl`（`x-oss-acl: public-read`）→ `Put public bucket acl is not allowed`；`GET /?acl` 显示 `private`。该账号禁止公共读，所以设计成签名 GET。
 - **接入点（Access Point）ARN 用不上**：用户给的是 `acs:oss:cn-shenzhen:<uid>:accesspoint/home/object/*`，但实测 `home-<uid>.cn-shenzhen.oss-accesspoint.aliyuncs.com` 等接入点域名都解析不了，而经典 bucket 域名上传/签名都通——PostObject 走经典域名即可。
 - AK 建议用 RAM 子账号、只授 `oss:PutObject`（+ `oss:GetObject`）；AK/SK 只写在服务器的 `oss.pb.js` 里，别进 git。
@@ -90,6 +90,34 @@ POST /api/oss/fetch  { url }   →   图片字节本身（Content-Type 保持 im
 - **没有 OSS 交互也能验证签名**：用 Node 独立复算 `base64(hmac_sha1(secret, policy))` 与 `signature` 比对，再检查 policy 的 `content-length-range`、`starts-with` 条件与 key 前缀（脚本 `check-policy.mjs`）。
 - 端到端（必须真机跑）：浏览器插一张图 → 断言正文含 `data-oss-key`、`img.naturalWidth > 0`、刷新后仍能显示、**带签名 200 / 裸链接 403**；完事用签名 DELETE 清掉测试对象。
 - 私有桶的签名 GET 格式：`GET\n\n\n<Expires>\n/<bucket>/<key>` → `base64(hmac_sha1(secret, …))`，拼成 `?OSSAccessKeyId=&Expires=&Signature=`（Signature 要 URL 编码）。
+
+## 上传报 `Failed to fetch` → 先查 CORS 白名单（2026-10-13 踩过）
+
+现象：画布粘贴图片弹「图片添加失败：Failed to fetch」（笔记里表现为「保存失败：…」），重试多少次都一样。
+原因：**页面 origin 不在 bucket 的 CORS 白名单里**——用户换了访问地址（`http://luckymian.xyz:18090`，域名+端口转发进来的），而白名单里只有内网地址与 dev 地址，浏览器就把直传 POST 的响应丢了。
+
+定位三步（都不用登服务器）：
+
+1. 找用户实际用的 origin：`GET /api/logs?perPage=60&sort=-created&filter=(data.url~'oss')`（superuser），看每条日志的 **`data.referer`** —— 那就是页面地址，比问用户快也准。
+2. 预检对拍：`curl -i -X OPTIONS https://<bucket>.<endpoint>/ -H "Origin: <页面地址>" -H "Access-Control-Request-Method: POST"`。
+   白名单里的 origin → `200` + `Access-Control-Allow-Origin: <origin>`；不在白名单 → **`403`（没有该响应头）**。
+3. 复现/验证（本地就能做，不需要那个域名真的可达）：本地静态服务起 dist，再让 Chrome **只把这个域名指到本机**：
+   `--host-resolver-rules=MAP <域名> 127.0.0.1 --proxy-bypass-list=<域名>`，
+   并用 `page.evaluateOnNewDocument(() => localStorage.setItem('pb_server_url','http://192.168.1.168:8090'))` 让 API 仍打 N1。
+   换个不在白名单的域名跑同一个脚本，就能稳定复现「图片添加失败：Failed to fetch」（已验证过一次）。
+
+加白名单（AK/SK 从服务器钩子里取，别落盘、别回显）：
+
+```sh
+GET /?cors  → Authorization: OSS <ak>:base64(hmac_sha1(sk, "GET\n\n\n<Date>\n/<bucket>/?cors"))
+PUT /?cors  → 同上这行待签内容，但要把 Content-MD5（body 的 base64(md5)）与 Content-Type: application/xml 一并带上
+```
+
+把 `<AllowedOrigin>新地址</AllowedOrigin>` 插进第一条 `<CORSRule>`（其余规则原样保留），PUT 后回读确认，再对各个 origin 各发一次 OPTIONS 复核。
+
+⚠️ **CORS 拦的是响应，不是请求**：POST 已经打到 OSS、对象**已经落盘**，只是浏览器丢掉了响应、前端没能记账 → 失败的那几次会在 OSS 留下**没人引用的孤儿对象**（UI 上看不出来）。清理方式：`GET /?prefix=canvas/&max-keys=1000` 列对象，逐个查 `work_canvas_item.oss_key` 与笔记正文的引用，**只删「最近新建且引用数为 0」的**（同一张图可能被多个元素共用，别按时间乱删）。
+
+前端已把这条错误做成可自查的文案（`api/oss.ts`）：`连不上 OSS（<host>）：Failed to fetch。当前页面地址是 <origin>——如果它不是刚才那个地址，多半是它不在 bucket 的 CORS 白名单里…`。
 
 ## 删除笔记里的图片 → OSS 同步回收（已实现）
 
