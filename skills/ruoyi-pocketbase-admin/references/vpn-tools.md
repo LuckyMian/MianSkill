@@ -80,6 +80,14 @@ chmod 600 /etc/nginx/conf.d/vpn.htpasswd && /etc/init.d/nginx reload
 #   改它要同时改三处：OpenClash 设置（dashboard_password）、vpn.conf 的 Bearer、seed/index.html 的 secret。
 # 改完入口密码后，浏览器可能还拿旧密码重试 → 再弹一次框输新密码即可（或在浏览器里删掉该站点的密码记录）。
 
+# 忘了入口密码怎么办（2026-10-14 踩过）：**htpasswd 里的密码不一定是 mihomo secret**，
+# 别拿 OpenClash 那串去试。用 apr1 哈希直接核对/重设，验证只用 curl 看状态码，别把密码打进日志：
+#   HASH=$(cut -d: -f2 /etc/nginx/conf.d/vpn.htpasswd); SALT=$(printf '%s' "$HASH" | cut -d'$' -f3)
+#   openssl passwd -apr1 -salt "$SALT" '候选密码'      # 与 $HASH 相同即该密码有效
+#   curl -s -o /dev/null -w '%{http_code}\n' -u admin:'候选密码' http://127.0.0.1:9080/version   # 200 = 有效
+# 弹框里的 realm 文案是 `VPN Panel`（vpn.conf 的 auth_basic），用来区分「nginx 的弹框」和
+# 「日常工作台自己的登录页（要 PocketBase 账号，见下）」。
+
 # 加 TLS（外网访问建议）：需要真证书（自签会被浏览器拦），在 vpn.conf 的 server 里加
 #   listen 9443 ssl;  ssl_certificate /path/fullchain.pem;  ssl_certificate_key /path/privkey.pem;
 # 外网只转发 9443，并在应用里把 VPN 地址换成 https://<域名>:9443/
@@ -142,6 +150,16 @@ iptables -I INPUT -i br-lan -p tcp --dport 9090 -j DROP     # 撤销：把 -I �
    **代价**：全站多了一层 nginx（它挂了控制台就外部/局域网都不通），PocketBase 直连地址变成 `192.168.1.168:8091`。
 
 顺带：种子页里写的是 `location.origin`，所以面板挂在哪个 origin 都能自洽，两种修法都不用改它。
+
+## 两个「要密码」的地方别搞混（外网排查时最容易混）
+
+| 弹框形态 | 要的是什么 | 存在哪 |
+| --- | --- | --- |
+| 浏览器**系统弹框**，文案带 `VPN Panel` | nginx 的 Basic 账号（用户名固定 `admin`，密码见 `vpn.htpasswd`，**不是** mihomo secret） | 按 origin 缓存：内网 `192.168.1.168:9080`、外网 `luckymian.xyz:19080`、公网 IP `:19080` 是三个不同 origin，各弹一次；浏览器重启后可能再弹 |
+| 页面里的**登录卡片**（日常工作台 · 账号/密码 + 「登录」按钮） | **PocketBase** 账号（superuser 或 `users` 集合记录），`admin`/nginx 密码在这里必然失败 | `localStorage` 的 token 同样按 origin 存；LAN 登过不代表域名端登过（`router/guard.ts` 里没登录会直接跳 `/login`） |
+
+机器上现存的 superuser 只有 `admin@istoreos.lan`（2026-10-14 在 `pb_data/data.db` 里核对到记录；`codex-temp@` / `codex-verify@` 已删）。
+忘记密码就用 `docker exec pocketbase /pb/pocketbase superuser upsert admin@istoreos.lan '<新密码>'` 重设（明文只走命令行、别写进技能文档）。
 
 ```sh
 # 1) N1 上（或任意在内网的机器）
