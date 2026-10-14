@@ -98,6 +98,36 @@ iptables -I INPUT -i br-lan -p tcp --dport 9090 -j DROP     # 撤销：把 -I �
 
 ## 怎么验（两条腿都要走）
 
+## 外网访问：卡点在电信网关的端口映射（2026-10-14 实测）
+
+报「外网访问不到 VPN 页面」时，**先分清楚是 N1 侧坏了还是外网没转发**，两边都查一遍：
+
+| 检查 | 命令 / 结果 |
+| --- | --- |
+| N1 侧 nginx 活着吗 | `curl -s -o /dev/null -w '%{http_code}' http://192.168.1.168:9080/_ping` → 200；`netstat -lntp \| grep 9080` 有 `uci.conf` 进程 |
+| 外网到底开了哪些端口 | 用外部视角测（N1 自己看不到 hairpin）：`https://check-host.net/check-tcp?host=<WAN_IP>%3A<port>&max_nodes=2`，再取 `https://check-host.net/check-result/<request_id>` |
+| 域名指向对不对 | `https://luckymian.xyz` 由 **ddns-go**（alidns，网卡 br-lan）维护，日志在 `/var/log/ddns-go.log`，配置 `/etc/ddns-go/ddns-go-config.yaml` |
+
+**2026-10-14 的实测结论**：N1 侧完全正常（nginx 9080 在听、`/_ping` 200、mihomo 9090 在听），
+**但电信网关（`192.168.1.1`，中国电信智能网关，Web 8080/80，无 SSH、无 UPnP IGD）只转发了 `18090 → 192.168.1.168:8090`（控制台）**；
+从公网测 `113.222.41.217` 的 8090 / 9080 / 9090 / 9876 / 443 / 80 … 全部 `Connection refused`，
+所以 VPN 面板（9080）从外网进不来。DDNS 没问题（WAN IP 113.222.41.217 未变，`ddns-go` 03:07 还比对过一次）。
+
+两条修法（都动不了 N1 以外的东西时，得让用户选一条）：
+
+1. **在网关加一条端口映射**（最贴合本页设计，改动最小）：外部 `9080` → `192.168.1.168:9080` TCP。
+   之后外网地址就是 `http://luckymian.xyz:9080/`；顺手在 `sys_dict` 的 `vpn_dashboard` 里加一条「外网」预设，
+   用户在外网时下拉切一下即可（选择记在 `localStorage.pb_vpn_url`，按设备生效）。
+2. **让 nginx 顶上已经转发出去的那个端口**（不需要网关权限，但要动容器和路由）：把 PocketBase 的映射从
+   `8090` 改成内部 `8091`（容器参数：`alpine:3.24` + `serve --http=0.0.0.0:8090` + `/opt/pocketbase → /pb` + 96MiB 限制），
+   nginx 接管 `8090`：`/` 与 `/api/*` 反代到 `127.0.0.1:8091`（不套 Basic），
+   mihomo 的路径（`/ui/metacubexd/*`、`/version`、`/proxies`、`/configs`、`/traffic` 等）按原样反代到 `9090` 并注入 Bearer，
+   种子页挪到 `/vpn/`。外网地址不变（`http://luckymian.xyz:18090/` 还是控制台），面板在 `http://luckymian.xyz:18090/vpn/`；
+   前端 `VITE_PB_URL` 是空的（同源），所以换到 nginx 后面也不用重新构建。
+   **代价**：全站多了一层 nginx（它挂了控制台就外部/局域网都不通），PocketBase 直连地址变成 `192.168.1.168:8091`。
+
+顺带：种子页里写的是 `location.origin`，所以面板挂在哪个 origin 都能自洽，两种修法都不用改它。
+
 ```sh
 # 1) N1 上（或任意在内网的机器）
 curl -s -o /dev/null -w '%{http_code}\n' http://192.168.1.168:9080/_ping              # 200，免认证
