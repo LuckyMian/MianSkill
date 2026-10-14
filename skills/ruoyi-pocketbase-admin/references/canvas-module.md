@@ -4,23 +4,27 @@
 `src/components/CanvasBoard/`（`CanvasSidebar` / `CanvasStage` / `CanvasItemView` / `CanvasToolbar` / `CanvasContextMenu`）+
 `src/stores/canvas.ts`（数据、几何、撤销、自动保存）。路由 `/work/canvas`，菜单名「无限画布」。
 
-一块画布 = 一份布局：能放**图片 / 文字便签 / 流程节点 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存；
+一块画布 = 一份布局：能放**图片 / 文字便签 / 链接卡片 / 流程节点 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存；
 元素之间可以**连线**（流程图），画布支持**全屏/专注模式**。
 
 ## 数据模型
 
 - `work_canvas`：`title`、`theme`(dark/light)、`viewport`(json `{x,y,zoom}`)、`sort`、`trashed`、`trashed_at`。
-- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/frame/node/edge) + `oss_key`/`source_url` +
+- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/link/frame/node/edge) + `oss_key`/`source_url` +
   几何（`x`/`y`/`w`/`h`/`rotation`/`z`）+ `crop`(json 归一化) + `flip_h`/`flip_v` + `color`/`text`/`font_size` +
   `frame_id`（所属分组框 id，空=顶层）+ `deleted`/`deleted_at` +
   连线专用 `from_id`/`to_id`（两端元素 id）/`from_anchor`/`to_anchor`/`edge_style`/`arrow`。
 
-两个要点：
+三个要点：
 
 1. **坐标是世界坐标**，跟视图缩放无关；视口单独存在 `work_canvas.viewport`（`screen = world * zoom + x/y`）。
 2. **分组框是容器**：子元素靠 `frame_id` 归属（不是靠几何包含），拖动框的标题栏会带上 `frame_id` 指向它的元素一起位移；
    缩放框时子元素同比例位移 + 缩放（文字项同步改 `font_size`）。拖动结束按「中心点落在哪个框里」重新归属，
    所以拖进/拖出框是自然发生的，不需要额外的挂载操作。不支持框套框。
+
+3. **`kind` 是 select 字段，加类型要扩值**。`link`（链接卡片，见下面「粘贴链接」一节）就是 2026-10-14 加的第六种值；
+   扩值由 `pnpm setup:pb` 幂等完成（`ensureCollection` 对 select 只做并集扩值）——**老库不跑一次脚本，前端发 `kind='link'` 会被 PB 400 掉**。
+   前端 `normalizeItem()` 里也有一份 kind 白名单，漏了会把新类型静默当成 `image`。
 
 ## 流程图：流程节点 + 连线
 
@@ -51,6 +55,33 @@
   浏览器在没有权限/非用户手势时只回一句「浏览器不允许直接读剪贴板」，还不如直接 `Ctrl+V`（`onPaste` 读 `clipboardData.items`，不需要权限）。
   别把那条菜单项加回来，也不要替它加权限弹窗（`navigator.permissions` 在 Chrome 里对 clipboard-read 静默失败）。
 
+## 粘贴链接：是图片就转存，不是图片就贴成链接卡片（2026-10-14）
+
+粘贴（`Ctrl+V`）或从网页拖入一个 `http(s)://` 地址时，**先让服务端验一下这是什么**，再决定放成什么：
+
+```
+粘贴/拖入地址 → POST /api/oss/fetch（钩子先 HEAD 探 Content-Type）
+   ├─ image/*      → 抓字节 → 直传 OSS → 图片元素（老行为，一点没变）
+   ├─ 非图片        → 钩子回 400「目标不是图片：text/html; charset=utf-8」
+   │                 → 前端识别成 RemoteUrlNotImageError → addLink() 贴成链接卡片
+   └─ 真失败（404/超时/超大）→ 照旧报错，弹「链接处理失败：…」
+```
+
+要点：
+
+- **判断依据是服务端探到的类型，不是文件后缀**，所以 `github.com/xx` 这种页面地址不会被当成图片去下载。前端 `api/oss.ts`
+  里 `fetchRemoteImage()` 把「目标不是图片」这条文案翻成 `RemoteUrlNotImageError`（`isNotImageUrlError()` 判类型，别用 `instanceof` 跨层判），
+  `store.addRemoteUrl()` 捕获后就地 `addLink()`，并返回 `'image' | 'link' | 'error'` 让 `CanvasStage.addWebUrl()` 决定提示文案
+  （「不是图片，已作为链接贴入画布」）。**这条判断依赖钩子的报错文案**，钩子里改文案的话这里的匹配常量要一起改。
+- 链接卡片：`kind='link'`，地址存 **`source_url`**（和图片的原始地址同一个字段），`text` 留作自定义标题（有值时卡片标题用它）。
+  默认 320×76，渲染成「🔗 + 域名 + 路径 + ↗」的小卡片（`CanvasItemView` 的 `canvas-item__link`），长地址省略号截断、`title` 悬停看全文。
+- **打开方式**：双击卡片，或点卡片右上角的 ↗；右键菜单里还有「打开链接 / 复制地址 / 改地址…」。
+  复制走 `utils/link.ts` 的 `copyText()`——**内网是 http，`navigator.clipboard` 在非安全上下文里不存在**，
+  必须退回 `document.execCommand('copy')`，否则用户在 8090 上永远复制不了。
+- 拖入的网页地址同样走这条链路（`onDrop` 里图片文件优先，然后是 `extractUrl()` 拿到的地址）；两者都失败才提示「没有识别到图片或链接」。
+- 卡片不抓页面标题/图标（那需要再开一个钩子路由 + 外网请求），要改标题就右键「改地址…」，或在 PB 里给 `text` 填个短标题。
+- 链接卡片和图片/文字一样参与框选、拖动、缩放、分组、复制、软删除与撤销重做——它们只是 `kind` 多了一个值，没有额外分支。
+
 ## 撤销重做：拖拽中不写栈
 
 拖拽的每一帧都调用 `store.setItemFields()`（只改内存 + 标脏），拖拽开始时用 `snapshotItems()` 存一份「拖前快照」，
@@ -72,6 +103,7 @@
 | 选择 | 左键点选、Shift 加选、空白拖动框选、Ctrl+A、Esc 取消 |
 | 移动 | 拖动选中项；方向键 1px、Shift+方向键 10px |
 | 缩放元素 | 拖角手柄等比（Shift 自由变形）、拖边手柄单轴拉伸、Alt 以中心缩放 |
+| 文本框改宽 | **拖左右边手柄只改宽度**（字号不动，文字重新折行、高度自动贴合内容）；拖角手柄才是整体等比缩放（含字号） |
 | 旋转 | **Ctrl + 拖角手柄**（吸附 15°，Shift 自由）；`R` 键 90° |
 | 翻转 | `H` 水平、`J` 垂直（**别用 Ctrl+H/Ctrl+V**：前者是浏览器历史、后者是粘贴） |
 | 层级 | Ctrl+] 上移、Ctrl+[ 下移、右键置顶/置底 |
@@ -80,10 +112,21 @@
 | 文字 | 双击空白新建、双击文字项编辑；编辑时若缩放≠1 会先临时切到 100% 便于输入，结束恢复 |
 | 连线 | 鼠标悬停元素出现 4 个连接点 → 从连接点拖到另一个元素（或它的连接点）松手；也可选中两个元素后右键「给选中的两个元素连线」 |
 | 连线样式 | 选中连线右键：直线/曲线/折线、箭头（末端/两端/无）、颜色板、「编辑线上文字」 |
+| 链接卡片 | 双击卡片或点右上角 ↗ 打开；右键：打开链接 / 复制地址 / 改地址… |
 | 全屏 | 工具栏最右的「全屏」按钮：浏览器全屏 + 专注模式（收起侧栏/顶栏/标签栏），Esc 退出 |
 
 细节坑：
 
+- **四边手柄会被连接点圆点挡住（2026-10-14 修）**：圆点画在「两端中点」，和 n/w/e/s 四个缩放手柄完全重叠，而它们在 DOM 里更靠后、还带 `z-index:2`，
+  于是 `pointerdown` 全被圆点抢走——表现就是**文本框只能拖角手柄整体缩放，左右边手柄像是不存在**（用户就是这么报的）。
+  两条修正：① `anchorDotStyle()` 把圆点沿 `anchorNormal()` 往外挪 12 屏幕像素（`/zoom`，和手柄不再重叠，视觉上也更像节点编辑器的连接点）；
+  ② `.canvas-stage__handle` 加 `z-index:3` 兜底。**挪圆点没有破坏连线**：连线手势仍然从圆点起手、终点判定也仍认 `[data-anchor]`，端点和线的起点仍按元素真实外框算。
+- **文本框的「自动高度」靠一个探针元素量**（`utils/textMetrics.ts` 的 `textBoxHeight()`）：在 body 下挂一个 hidden div，
+  `white-space:pre-wrap / overflow-wrap:anywhere / line-height:1.35` 与 `.canvas-item__text` 保持一致，量出来的就是世界坐标下的高度。
+  拖左右边手柄时每帧量一次（不吃 Vue 的 nextTick，量的是最终布局）；**判空跳过**（空文字时返回 0，调用方按「不改高度」处理），
+  编辑文字提交时是**只长不缩**（`fitted > h` 才写 h），免得把用户手动拉高过的框压回去。
+- **字号只在「角手柄 + 没按 Shift」时缩放**（`uniformScale`），其它情况一律不动字号。别改回「(kx+ky)/2 一刀切」——
+  那样拖边手柄也会顺带改字号，又变回「只能整体调整」。
 - **元素 rotated 时的手柄**：缩放/裁剪的世界位移要按 `-rotation` 旋转到元素自身坐标系（`localDelta()`），否则旋转过的图拖手柄会「斜着跑」。
 - **翻转要作用在整个元素上**（外框 transform 里 `scaleX/scaleY`），不能只翻 `<img>`：裁剪后 img 比外框大且带偏移，翻 img 会翻错轴。
 - **裁剪语义**：`crop` 是相对原图的归一化区域，裁剪浮层显示的是**整张原图**（`sourceRectOf()` 给出原图在元素坐标系里的位置），
@@ -111,13 +154,14 @@
 
 ## 删除语义（与随手笔记一致）
 
-删除元素 = `deleted=true`（图片还在 OSS），画布侧栏「最近删除」可恢复或彻底删除；
+删除元素 = `deleted=true`（图片还在 OSS），画布侧栏「最近删除」可恢复或彻底删除（链接卡片也在这张列表里，标签是「链接 <域名/路径>」）；
 **只有彻底删除**（单个元素、清空本画布回收站、彻底删除整块画布）才调 `POST /api/oss/delete` 回收对象，回收前查引用。
 删除整块画布也是软删除（`trashed`），彻底删除时才连带删掉它的元素记录。
 
 ## 已知边界
 
 - 元素上限 2000（`ITEM_LIMIT`，一次 `listAll` 拉完当前画布）；超了界面会提示拆板。
+- 链接卡片只存地址，不抓标题/图标/摘要；也不做「点开前预览」。
 - 单人使用、服务端存储即多设备同步，最后写入者胜，不做并发合并。
 - 不做导出 PNG、演示模式、网格吸附。
 - 画布内不做跨板共享素材库（从笔记复用图片也没做），但复制元素/复制画布会复用同一批 OSS 对象。

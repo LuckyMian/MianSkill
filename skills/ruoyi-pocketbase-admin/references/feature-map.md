@@ -12,7 +12,7 @@
 | 归档任务 | `/work/task` | `work_task` | schema CRUD（`canEdit: false`，操作列用 `#row-actions` 插槽加「还回待办」） | `config/modules/task.ts` + `views/work/task/Index.vue`（薄壳 + 行操作） |
 | 工作记录 | `/work/report` | `work_report` | schema CRUD | `config/modules/report.ts` |
 | 随手笔记 | `/work/note` | `work_note` / `work_note_folder`（+ 阿里云 OSS） | **专用视图** + store + 服务端钩子 | `views/work/note` + `components/NoteBoard` + `stores/note.ts` |
-| 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布（含连线流程图、全屏专注） | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
+| 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布（含连线流程图、链接卡片、文本框可单独调宽、全屏专注） | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
 | 项目总览 | `/pm/overview` | `pm_project` / `pm_module` / `pm_item` + GitHub 公开 API | 专用视图（统计卡 + 项目进度卡 + 模块表 + 趋势条 + 仓库卡） | `views/pm/overview/Index.vue` + `components/PmBoard/RepoCard.vue`，见 [pm-module.md](pm-module.md) |
 | 需求看板 | `/pm/board` | `pm_item` | **专用视图** + store（6 列看板、原生 HTML5 拖拽、详情抽屉自动保存、回收站） | `views/pm/board/Index.vue` + `components/PmBoard/*` + `stores/pm.ts` |
 | 项目与模块 | `/pm/setup` | `pm_project` / `pm_module` | schema CRUD（两个页签各一个 `CrudTable`，项目下拉动态生成） | `config/modules/pmProject.ts` + `views/pm/setup/Index.vue` |
@@ -119,6 +119,10 @@ superuser 密码与 OSS 的 AK/SK 只存在于 `frontend/.env.local`（已 gitig
   两个必须记住的坑：① Element Plus 的下拉浮层用完仍留在 DOM 里，`querySelector` 会点到隐藏的旧项——按
   `getBoundingClientRect().width > 0` 判可见（**不能用 `offsetParent`**，浮层是 fixed 定位、恒为 null），并在打开前给已有项打标记、只点新出现的那个；
   ② 画布内的拖动位移是世界坐标，断言时要除以当前 zoom（`scale(...)`），别按屏幕像素算。
+  ③ **CDP 造不出真实双击**：`page.mouse.click(x, y, { clickCount: 2 })` 不会让页面收到 `dblclick`（实测 Chrome 无头）。
+     验双击接线就直接 `el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`；另外 CDP 的鼠标事件只落在视口内，
+     元素被拖到窗口外时 `elementFromPoint` 返回 null、断言会莫名其妙失败——先按一下 `Ctrl+0`（适应窗口）再测。
+     自测都在**临建画布**上做（API 建 `work_canvas` 记录 → 侧栏点进去 → 跑完删记录 + 回收 OSS 对象），别污染用户自己的板。
 
 ### 13. 外部数据（无后端时）的三条约定
 
