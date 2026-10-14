@@ -28,6 +28,7 @@ metadata:
 - VPN 面板入口（工作台主页按钮 → 新标签打开）、外网访问怎么配 → [vpn-tools.md](references/vpn-tools.md)
 - 配/改笔记图片上传（阿里云 OSS 直传、PocketBase 钩子） → [oss-images.md](references/oss-images.md)
 - 发布、验证、回滚、线上排查、迁移到外置盘 → [deploy-n1.md](references/deploy-n1.md)
+- 定时把整个容器备份到 GitHub、改备份时间、在别的 docker 上还原 → [backup-github.md](references/backup-github.md)
 - 被问「为什么不用若依/yudao/低代码」，或要重新选型 → [framework-landscape.md](references/framework-landscape.md)
 
 ## 必须守住的不变量
@@ -40,10 +41,11 @@ metadata:
 6. **日期按「本地墙钟、不带时区」存取**（写 `YYYY-MM-DD 00:00:00`），显示日期用 `pbDateOnly()` 取前 10 位，不要用 `pbDateToLocal()`（会把 `…000Z` 当 UTC 换算，日期时间都 +8 小时）。
 7. **破坏性动作先落账再删除**。待办「完成/删除」都先写 `work_task`（`source_id` 做幂等键），成功才删原记录；失败就保留原数据并把原因显示出来。同类：删清单先把待办移到未分类，进「最近删除」的笔记不回收图片。归纳见 [feature-map.md](references/feature-map.md)。
 
-## 两个踩过的坑（再犯代价很高）
+## 踩过的坑（再犯代价很高）
 
 - **API 建的集合默认没有 `created` / `updated`**。v0.23+ 里它们是可选的 autodate 字段，Dashboard 建集合会默认勾上，纯 API 建要自己声明；缺了它，任何按 `created`/`updated` 排序或读这两个字段的请求都会直接 **HTTP 400**（报错文案是笼统的 `Something went wrong while processing your request.`）。`pnpm setup:pb` 现在会幂等补齐缺失字段，改集合后跑一次即可。
 - **报错别只看前端文案**：400 常见成因就是上面这条、或 filter 里引用了不存在的字段。用 `curl` 直接打 API 定位比看界面快得多。
+- **iStoreOS 的 crond 只在启动时读 crontab**：手工往 `/etc/crontabs/root` 加行不重启 cron，任务永远不会执行（实测加探针 6 分钟无反应，`/etc/init.d/cron restart` 后当分钟就跑）。改完必须 restart。
 
 ## 常用动作
 
@@ -58,6 +60,14 @@ metadata:
 | 非交互发布 | `pnpm deploy:pb --target=docker://root@192.168.1.168:22/pocketbase:/pb/pb_public` |
 | 类型检查 | `pnpm type-check` |
 
+N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)）：
+
+| 目的 | 命令 |
+| --- | --- |
+| 立刻整容器备份一次 | `ssh root@192.168.1.168 sh /opt/pb-backup/backup.sh` |
+| 看上次备份结果 | `ssh root@192.168.1.168 cat /opt/pb-backup/logs/last-status` |
+| 改备份时间 | 改 `/opt/pb-backup/backup.conf` 的 `CRON_SCHEDULE` 后跑 `sh /opt/pb-backup/apply-schedule.sh`（必须重启 cron，见下文） |
+
 ## 环境速查
 
 | 项 | 值 |
@@ -70,6 +80,7 @@ metadata:
 | 包管理器 | N1 是 iStoreOS 25.12.5，用 **`apk`**（`opkg` 不存在） |
 | SSH | `root@192.168.1.168:22`，**密码登录**；路由器是 iStoreOS（dropbear），`scp` 必须加 `-O` |
 | 资源上限 | 容器内存限制 96MiB（实测占用约 21MiB）；rootfs 1.2GB，可用约 1.1GB |
+| 定时备份 | 每周一 03:30（`/etc/crontabs/root` 里 `# pb-backup` 那行）→ `/opt/pb-backup/backup.sh` → 私有仓库 `LuckyMian/n1-pocketbase-backup`；工具在 `/opt/pb-backup/`，源码在 `G:\文档\ChatGPT\ruoyi\backup\` |
 
 ## 当前状态与待办（截至 2026-10-14）
 
@@ -84,3 +95,8 @@ metadata:
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
 - 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
 - 候选下一步：待办的提醒与重复任务、拖拽排序、附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。
+- **定时整容器备份（2026-10-14 上线）**：每周一 03:30 停容器约 23–28 秒打整包快照（31.3MB），
+  提交并 force push 到私有仓库 `LuckyMian/n1-pocketbase-backup`，仓库里带 `restore.sh`，任意
+  docker 主机 clone 后一键还原（已在 N1 上实测还原到 8099 端口，数据 md5 与线上一致）。
+  认证用路由器上的 Ed25519 部署密钥，不落账号令牌；`KEEP_SNAPSHOTS=4` + orphan 覆盖式提交把
+  eMMC 占用稳定在约 170MB。细节、坑与运维命令见 [backup-github.md](references/backup-github.md)。
