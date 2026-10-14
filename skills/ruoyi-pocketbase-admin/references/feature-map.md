@@ -13,7 +13,7 @@
 | 工作记录 | `/work/report` | `work_report` | schema CRUD | `config/modules/report.ts` |
 | 随手笔记 | `/work/note` | `work_note` / `work_note_folder`（+ 阿里云 OSS） | **专用视图** + store + 服务端钩子 | `views/work/note` + `components/NoteBoard` + `stores/note.ts` |
 | 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布（含连线流程图、全屏专注） | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
-| VPN | 无路由（页面已下线） | 无库表；入口地址由主机名推导（`sys_dict.vpn_panel_token` 可选） | 工作台主页「打开 VPN 面板」按钮 → **新标签**打开 nginx 入口（9080/19080）里的 metacubexd | `views/dashboard/Index.vue` + N1 `/etc/nginx/conf.d/vpn.conf`，见 [vpn-tools.md](vpn-tools.md) |
+| 工作台快捷按钮 | 无路由（原「工具 → VPN」页已下线） | `sys_dict` 里 `dict_type='dashboard_link'` 的记录（label=文字、value=网址、color=颜色、sort=顺序） | 工作台主页顶部渲染成一排按钮，点击**新标签**打开；增删按钮＝在「系统管理 → 字典配置」里加删记录 | `views/dashboard/Index.vue` + N1 `/etc/nginx/conf.d/vpn.conf`，见 [vpn-tools.md](vpn-tools.md) |
 | 菜单配置 | `/system/menu` | `sys_menu` | schema CRUD（schema 写在页面里，因为下拉选项要按库里数据动态生成） | `views/system/menu/Index.vue` |
 | 字典配置 | `/system/dict` | `sys_dict` | schema CRUD | `config/modules/sysDict.ts` |
 | 集合总览 | `/system/collections` | 集合元信息（需 superuser） | 只读诊断页 | `views/system/collections/Index.vue` |

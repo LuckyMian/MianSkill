@@ -133,15 +133,23 @@ chmod 600 /etc/nginx/conf.d/vpn.htpasswd && /etc/init.d/nginx reload
 iptables -I INPUT -i br-lan -p tcp --dport 9090 -j DROP     # 撤销：把 -I 换成 -D
 ```
 
-## 应用侧（2026-10-14 改：入口在工作台主页）
+## 应用侧（2026-10-14 二次改：按钮由数据字典配置）
 
-- 工作台主页顶部的「打开 VPN 面板」按钮：`openVpnPanel()` → `window.open(vpnPanelUrl, '_blank', 'noopener')`。
-  地址 = 同主机名 + `9080`（私有网段）或 `19080`（域名/公网 IP），路径是入口根 `/`（播种页会写 localStorage 再跳
-  `/ui/metacubexd/#/overview`，所以直接写面板子路径反而可能因为没播种而让人手填密钥）。
-  配了 `sys_dict.vpn_panel_token` 就用 `/__panel?token=…` 的新标签地址（免弹框），没配就裸地址（弹一次 Basic 框，用户名 `admin`）。
-  **页面上只显示裸地址**，带 token 的地址不出现在 UI 里。
-- 旧的 `views/tools/vpn/Index.vue`（地址栏 + iframe 那个专用视图）已删除；`sys_dict.vpn_dashboard`
-  只留给历史/手动用途，前端不再读它。
+工作台主页顶部那排快捷按钮**完全由数据驱动**，代码里不写死地址、也不做主机名/端口推导：
+
+- 数据来源：`sys_dict` 里 `dict_type = 'dashboard_link'` 的记录 —— `label` = 按钮文字、`value` = 网址、
+  `color` = 按钮颜色（`primary/success/warning/danger/info`，其它值按 `primary`）、`sort` = 前后顺序。
+  目前只有一条：`VPN 面板 → http://luckymian.xyz:19080/ui/metacubexd/#/overview`。
+- 增删按钮 = 在「系统管理 → 字典配置」里加/删这条记录（`value` 必须以 `http://` 或 `https://` 开头才会渲染成按钮）；
+  一条都没有时这行不显示。
+- 点击一律 `window.open(url, '_blank', 'noopener')`：**新标签打开**，不顶掉工作台。
+- 旧的两版实现都已删除：`views/tools/vpn/Index.vue`（地址栏 + iframe 专用页）没了，工作台里那套
+  「同主机名 + 9080/19080 自动选端口」和读 `vpn_panel_token` 拼 `/__panel?token=` 的写法也一并去掉了
+  （用户明确要「直接跳那个地址」+「按钮自己能加能删」）。
+- `/__panel?token=…` 这套 nginx 机制和 `sys_dict.vpn_panel_token` 记录**留着但不被前端调用**：
+  哪天想在按钮上免掉 Basic 弹框，把某个 `dashboard_link` 的 `value` 设成
+  `http://<主机>:9080/__panel?token=<TOKEN>`（或外网 19080 那条）即可，落点一样是面板。
+- `sys_dict.vpn_dashboard`（老的内网地址预设）同样只剩历史用途，前端不再读。
 
 ### 老版本（专用页面）的地址解析，留着参考
 
