@@ -22,6 +22,7 @@ metadata:
 - 改「待办事项」（微软 To Do 风格那一页）的交互语义 → [todo-module.md](references/todo-module.md)
 - 改「随手笔记」（Apple 备忘录风格那一页）→ [note-module.md](references/note-module.md)
 - 改「无限画布」（PureRef 风格参考板：图片/文字/分组框、平移缩放、裁剪旋转、撤销重做）→ [canvas-module.md](references/canvas-module.md)
+- 改「项目管理」（需求看板/拖拽、进度总览、需求转待办、GitHub 仓库卡片）→ [pm-module.md](references/pm-module.md)
 - 改亮/暗主题、画布全屏（专注模式）、给新页面加配色 → [theme.md](references/theme.md)
 - 改手机端适配、加触摸手势、改断点 → [mobile.md](references/mobile.md)
 - VPN 面板入口（工作台主页按钮 → 新标签打开）、外网访问怎么配 → [vpn-tools.md](references/vpn-tools.md)
@@ -70,12 +71,13 @@ metadata:
 | SSH | `root@192.168.1.168:22`，**密码登录**；路由器是 iStoreOS（dropbear），`scp` 必须加 `-O` |
 | 资源上限 | 容器内存限制 96MiB（实测占用约 21MiB）；rootfs 1.2GB，可用约 1.1GB |
 
-## 当前状态与待办（截至 2026-10-13）
+## 当前状态与待办（截至 2026-10-14）
 
 - 线上：`http://192.168.1.168:8090` 就是本系统；原测试页备份为 `/opt/pocketbase/pb_public/index.backup-*.html`。
-- 集合：18 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule`（已下线，仅留数据）/ `work_report` / `work_todo_list` / `work_todo` / `work_note` / `work_note_folder` / `work_canvas` / `work_canvas_item`。
-- 数据：`sys_menu` 11 条（含「无限画布」；「工具 → VPN」两条已于 2026-10-14 删除）、`sys_dict` 14 条（含 `vpn_dashboard` 老地址预设、`vpn_panel_token` 入口口令、`dashboard_link` 工作台快捷按钮）；业务表基本为空，待办/画布按需使用。
+- 集合：21 个 —— 6 个 PocketBase 内置、`demo_posts`（早期测试残留，可删）、`sys_menu` / `sys_dict` / `work_task` / `work_schedule`（已下线，仅留数据）/ `work_report` / `work_todo_list` / `work_todo` / `work_note` / `work_note_folder` / `work_canvas` / `work_canvas_item` / `pm_project` / `pm_module` / `pm_item`（项目管理，见 [pm-module.md](references/pm-module.md)）。
+- 数据：`sys_menu` 15 条（含「无限画布」与「项目管理」1+3 条；「工具 → VPN」两条已于 2026-10-14 删除，种子脚本里的这两条也已清掉，别再跑回来）、`sys_dict` 38 条（含 `vpn_dashboard` 老地址预设、`vpn_panel_token` 入口口令、`dashboard_link` 工作台快捷按钮、`pm_*` 5 类 23 条）；`pm_project` 预置 4 个项目（UltraControlSystem / UnrealPackTimeVerification / HotPackTest / MianSkill，均带 repo），其余业务表基本为空。
 - 已上线功能：工作台（顶部一排**可配置的快捷按钮**，`sys_dict` 里 `dict_type='dashboard_link'` 的记录驱动，新标签打开，见 [vpn-tools.md](references/vpn-tools.md)）、待办事项（微软 To Do 风格 v1；智能视图只有「我的一天 / 重要 / 全部任务」，进来默认「全部任务」，**「我的一天」= 到期日今天**，没有到期日的只在「全部任务」，见 [todo-module.md](references/todo-module.md)）、归档任务、工作记录、随手笔记（Apple 备忘录风格）、**无限画布（PureRef 风格参考板：图片/文字/流程节点/分组框 + 连线流程图 + 全屏专注 + 手机触摸手势，见 [canvas-module.md](canvas-module.md)）**、**全站亮/暗主题**（顶栏切换，见 [theme.md](theme.md)）、**手机端适配**（≤900px 外壳抽屉化 + 画布双指缩放/长按菜单，见 [mobile.md](mobile.md)）、菜单/字典/集合管理。
+- **项目管理（2026-10-14 上线）**：项目总览 `/pm/overview`（项目进度卡 + 模块进度表 + 近 7 天完成 + GitHub 仓库卡）、需求看板 `/pm/board`（6 列看板、桌面原生拖拽改状态、触屏降级为下拉、详情抽屉自动保存、需求转待办、回收站软删除）、项目与模块 `/pm/setup`（schema CRUD）；顶栏全站「+ 想法」（`Alt+I`）+ 工作台「项目进度」卡；GitHub 数据由浏览器直连公开 API（无 Token，缓存 30 分钟，页脚显示剩余配额）。细节见 [pm-module.md](references/pm-module.md)。
 - OSS 钩子（`/opt/pocketbase/pb_hooks/oss.pb.js`，2026-10-13 更新，旧版备份在同级 `oss.pb.js.bak-20261013`）：上传目录白名单 `notes/` + `canvas/`，新增 `/api/oss/fetch` 网页图片抓取代理；改动细节与 JSVM 限制见 [oss-images.md](oss-images.md)。**换访问地址（域名/端口/公网 IP）必须同步 bucket 的 CORS 白名单**，否则图片直传会报 `图片添加失败：Failed to fetch`（当前白名单：`http://192.168.1.168:8090`、`http://localhost:5173`、`http://luckymian.xyz:18090`）。
 - 待办与归档是双向的：待办里「完成」或「删除」都会**先写入 `work_task`（「归档任务」）再从待办移除**，所以待办页只留未完成的事，没有「已完成」视图；归档失败时待办会被保留，不会丢数据。反过来，归档页操作列上的**「还回待办」**会把一条归档记录还原成待办（先建待办、成功后再删归档记录），归档页因此不再提供「编辑」（要改就还回待办改完再归档）。
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。

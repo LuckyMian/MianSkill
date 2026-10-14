@@ -1,6 +1,6 @@
 # 功能地图与方法归纳
 
-一页看清「已经做了什么、每块用了什么方法」，以及新需求该走哪条路。细节在各专题 reference 里，这里只做索引与归纳（2026-10-12 按当前代码整理）。
+一页看清「已经做了什么、每块用了什么方法」，以及新需求该走哪条路。细节在各专题 reference 里，这里只做索引与归纳（2026-10-14 按当前代码整理）。
 
 ## 一、页面清单
 
@@ -13,6 +13,10 @@
 | 工作记录 | `/work/report` | `work_report` | schema CRUD | `config/modules/report.ts` |
 | 随手笔记 | `/work/note` | `work_note` / `work_note_folder`（+ 阿里云 OSS） | **专用视图** + store + 服务端钩子 | `views/work/note` + `components/NoteBoard` + `stores/note.ts` |
 | 无限画布 | `/work/canvas` | `work_canvas` / `work_canvas_item`（+ 阿里云 OSS） | **专用视图** + store + DOM 自绘无限画布（含连线流程图、全屏专注） | `views/work/canvas` + `components/CanvasBoard` + `stores/canvas.ts` |
+| 项目总览 | `/pm/overview` | `pm_project` / `pm_module` / `pm_item` + GitHub 公开 API | 专用视图（统计卡 + 项目进度卡 + 模块表 + 趋势条 + 仓库卡） | `views/pm/overview/Index.vue` + `components/PmBoard/RepoCard.vue`，见 [pm-module.md](pm-module.md) |
+| 需求看板 | `/pm/board` | `pm_item` | **专用视图** + store（6 列看板、原生 HTML5 拖拽、详情抽屉自动保存、回收站） | `views/pm/board/Index.vue` + `components/PmBoard/*` + `stores/pm.ts` |
+| 项目与模块 | `/pm/setup` | `pm_project` / `pm_module` | schema CRUD（两个页签各一个 `CrudTable`，项目下拉动态生成） | `config/modules/pmProject.ts` + `views/pm/setup/Index.vue` |
+| 全站「+ 想法」 | 无路由（顶栏按钮，`Alt+I`） | 写 `pm_item` | 小对话框复用 `QuickCapture` | `layout/components/Navbar.vue` + `components/PmBoard/QuickIdeaDialog.vue` |
 | 工作台快捷按钮 | 无路由（原「工具 → VPN」页已下线） | `sys_dict` 里 `dict_type='dashboard_link'` 的记录（label=文字、value=网址、color=颜色、sort=顺序） | 工作台主页顶部渲染成一排按钮，点击**新标签**打开；增删按钮＝在「系统管理 → 字典配置」里加删记录 | `views/dashboard/Index.vue` + N1 `/etc/nginx/conf.d/vpn.conf`，见 [vpn-tools.md](vpn-tools.md) |
 | 菜单配置 | `/system/menu` | `sys_menu` | schema CRUD（schema 写在页面里，因为下拉选项要按库里数据动态生成） | `views/system/menu/Index.vue` |
 | 字典配置 | `/system/dict` | `sys_dict` | schema CRUD | `config/modules/sysDict.ts` |
@@ -33,6 +37,7 @@
 | 亮/暗主题 | `stores/ui.ts` + `style.css` 的 `--app-*` 变量 + Element Plus 官方暗色变量 | `<html>.dark` 一切，全站换肤；专注模式（画布全屏）也在 ui store，见 [theme.md](theme.md) |
 | 手机端 | `layout/Index.vue`（≤900px 外壳）+ 各页抽屉 + `CanvasStage` 触摸手势 | 侧栏改抽屉、隐藏标签栏、表格弹窗单列、画布双指缩放/长按菜单，见 [mobile.md](mobile.md) |
 | 日期与格式化 | `utils/format.ts` | `pbDateOnly` / `localDay` / `humanDay` / `toCsv` |
+| 外部只读数据（GitHub） | `api/github.ts` | 浏览器直连公开 API（无 Token），localStorage 缓存 30 分钟，页脚显示剩余配额，单个仓库失败只降级自己的卡片；见 [pm-module.md](pm-module.md) |
 | 初始化 | `scripts/setup-collections.mjs` | 幂等建集合、补缺失字段、灌默认菜单与字典 |
 | 发布 | `scripts/deploy.mjs` + `deploy-interactive.ps1` | `dist` → `pb_public`，只写不删 + 覆盖前备份 |
 
@@ -114,6 +119,14 @@ superuser 密码与 OSS 的 AK/SK 只存在于 `frontend/.env.local`（已 gitig
   两个必须记住的坑：① Element Plus 的下拉浮层用完仍留在 DOM 里，`querySelector` 会点到隐藏的旧项——按
   `getBoundingClientRect().width > 0` 判可见（**不能用 `offsetParent`**，浮层是 fixed 定位、恒为 null），并在打开前给已有项打标记、只点新出现的那个；
   ② 画布内的拖动位移是世界坐标，断言时要除以当前 zoom（`scale(...)`），别按屏幕像素算。
+
+### 13. 外部数据（无后端时）的三条约定
+
+像 GitHub 仓库状态这种「只读、公开、偶尔失败」的数据（`api/github.ts`），不必为了它加一个常驻进程：
+
+1. **缓存 + 配额可见**：`localStorage` 存快照和拉取时间（TTL 30 分钟），页面上把「更新于 / 剩余配额 / 重置时间」显示出来，配额用尽时用户能自己看懂什么时候恢复。
+2. **失败局部化**：每个数据源各自 `try/catch`（或 `Promise.allSettled`），失败只让那一张卡片降级（保留上一次成功的数据 + 一行原因），页面其它块照常渲染。
+3. **形状先定死**：页面只认一个 `GhRepoSummary` 这类接口（`types/index.ts`），将来换成「N1 钩子 + Token 定时写库」时只替换取数实现，页面不用改。
 
 ## 三、新增一个功能的检查清单
 
