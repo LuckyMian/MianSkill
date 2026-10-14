@@ -59,16 +59,35 @@
 
 删除是**软删除**：`trashed=true` + `trashed_at`，看板上「回收站」勾选框里还原或彻底删除；彻底删除才 `DELETE` 记录（不写 `work_task`，和待办的归档规则无关）。
 
-## GitHub 取数（`api/github.ts`）
+## GitHub 取数（`api/github.ts` → N1 钩子 `/api/gh/repo`）
 
-浏览器直连 `https://api.github.com`（无 Token，公开仓库）。
+2026-10-14 改造。原来是**浏览器直连** `https://api.github.com`（匿名 = 只认公开仓库），备份仓库转私有后
+卡片只剩一句「仓库不存在或已改名」，所以改成**服务端代理**：令牌只放在 N1 上，浏览器拿不到。
 
-- **每个仓库 4 个请求**，`Promise.allSettled` 互不影响：`/repos/{slug}`（pushed_at / open_issues_count / star / 默认分支 / archived）、`/pulls?state=open&per_page=100`（开放 PR 数，issue 数 = `open_issues_count` − PR 数，因为 GitHub 的 `open_issues_count` 把 PR 也算了）、`/commits?per_page=5`（最近提交）、`/commits?since=<本周一 ISO>&per_page=1`（读 `Link` 头 `rel="last"` 的页码 = 本周提交数，没有 `Link` 时按返回条数判断 0/1）。
-- **缓存**：`localStorage` 键 `pm_gh_cache_v1`，TTL 30 分钟（`GH_CACHE_TTL_MS`）。未登录限额 60 次/小时、按客户端 IP，4 个仓库 30 分钟一档最多 32 次/小时，手机+电脑同时开着也不会顶满。**全部仓库都失败时不刷新缓存时间戳**（`anySuccess`）：缓存算过期，下次进页面自动重试，配额恢复后不用等 30 分钟、也不用记得点「刷新」。
-- **配额显示**：`/rate_limit`（不消耗限额）与仓库请求并行拉，页脚显示「GitHub 剩余配额 N 次（HH:mm 重置）」。
-- **失败降级**：403/429 → 提示「限额已用尽，HH:mm 之后重试」并**保留上一次成功的数据**；404 → 「仓库不存在或已改名」；网络不通 → 「网络不可达」。任意一个仓库失败只影响它自己的卡片，页面其它部分照常。
+```
+浏览器 ── GET /api/gh/repo?slug=owner/repo（带 PB 登录令牌，需登录）──> pb_hooks/github.pb.js
+                                                                      └─ $http.send 打 api.github.com（Bearer 令牌）
+```
+
+- **钩子**：`pb_hooks/github.pb.js`（源码副本在开发机 `pocketbase-hooks/github.pb.js`）。它做 4 个请求
+  （`/repos/{slug}`、`/pulls?state=open`、`/commits?per_page=5`、`/commits?since=<本周一 ISO>&per_page=1`），
+  把 `Link` 头 `rel="last"` 的页码当本周提交数（没有 `Link` 就按返回条数算 0/1），顺手把
+  `open_issues_count` − 开放 PR 数 = 真 issue 数。响应形状：`{slug, ok, error?, repo, openPulls, weekCount, commits, rate, cachedAt}`。
+  另有 `GET /api/gh/status`（令牌是否配置 + 剩余配额）用来排查。
+- **令牌**：`github.pb.js` 顶部的 `GH_TOKEN`，建议**只读细粒度 PAT**（Repository access 只勾要显示的仓库；
+  Permissions：Metadata=Read、Contents=Read）。没配时接口返回「N1 上还没配置 GitHub 令牌…」，卡片直接把这句显示出来。
+  注意：这个文件在 `/opt/pocketbase/pb_hooks/` 里，**会被每周的整容器备份带走**（和 OSS 的 AK/SK 一样），
+  所以备份仓库必须私有。
+- **缓存**：服务端 5 分钟（`GH_CACHE_SECONDS`，多个浏览器刷新不会重复打 GitHub，`force=1` 跳过）+
+  前端 `localStorage` 键 `pm_gh_cache_v2`，TTL 30 分钟（`GH_CACHE_TTL_MS`）。**全部仓库都失败时不刷新
+  前端缓存时间戳**（`anySuccess`）：缓存算过期，下次进页面自动重试，配好令牌后不用等 30 分钟、也不用点「刷新」。
+- **配额显示**：页脚「GitHub 剩余配额 N 次（HH:mm 重置）」现在取的是**令牌**的限额（5000 次/小时），
+  由 `/api/gh/repo` 响应里的 `rate` 字段带回。
+- **失败降级**：钩子把 GitHub 的错误翻成人话（401 令牌无效、403/429 配额或权限、404 仓库不存在或令牌没授权），
+  卡片显示这句话并**保留上一次成功的数据**；未登录/登录过期时前端提示「登录已过期，重新登录后即可显示私有仓库」。
+  任意一个仓库失败只影响它自己的卡片。改钩子时别踩 JSVM 的坑（见 [oss-images.md](oss-images.md)）：处理器回调里
+  看不到文件级 `const`（`$app.store()` 的 key 必须写字面量）、没有 `require`、`$os.readFile` 读不存在的文件会 panic。
 - 仓库列表来自 `pm_project.repo`（`parseRepoSlug` 能认 `owner/repo`、仓库 URL、`git@` 形式），所以加项目就等于加仓库，不用另配清单。
-- **要支持私有仓库或更高限额**：把 `api/github.ts` 换成「N1 钩子 + Token 定时写库」（`pb_hooks` 里 `$http.send` + `cronAdd`，写进一张快照集合），页面侧只认 `GhRepoSummary` 这个形状，不用改。注意 JSVM 的四条限制见 [oss-images.md](oss-images.md)。
 
 ## 加东西的步骤
 
