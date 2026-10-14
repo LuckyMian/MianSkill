@@ -47,6 +47,9 @@
 - **同一张图允许多个元素共用一个 OSS key**（Ctrl+D 复制、复制画布都会复用对象），
   所以回收前必须 `recycleUnreferenced()` 查一遍引用：还有元素在用的 key 一个都不删；查询失败时**保守全留**。
 - 粘贴 / 拖文件 / 拖网页图片链接（服务端转存，见 [oss-images.md](oss-images.md)）三个入口都在 `CanvasStage.vue`。
+  **粘贴只有键盘 `Ctrl+V` 这条入口**：右键菜单里的「粘贴图片」已于 2026-10-14 删除——它走 `navigator.clipboard.read()`，
+  浏览器在没有权限/非用户手势时只回一句「浏览器不允许直接读剪贴板」，还不如直接 `Ctrl+V`（`onPaste` 读 `clipboardData.items`，不需要权限）。
+  别把那条菜单项加回来，也不要替它加权限弹窗（`navigator.permissions` 在 Chrome 里对 clipboard-read 静默失败）。
 
 ## 撤销重做：拖拽中不写栈
 
