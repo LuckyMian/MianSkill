@@ -64,7 +64,7 @@
 浏览器直连 `https://api.github.com`（无 Token，公开仓库）。
 
 - **每个仓库 4 个请求**，`Promise.allSettled` 互不影响：`/repos/{slug}`（pushed_at / open_issues_count / star / 默认分支 / archived）、`/pulls?state=open&per_page=100`（开放 PR 数，issue 数 = `open_issues_count` − PR 数，因为 GitHub 的 `open_issues_count` 把 PR 也算了）、`/commits?per_page=5`（最近提交）、`/commits?since=<本周一 ISO>&per_page=1`（读 `Link` 头 `rel="last"` 的页码 = 本周提交数，没有 `Link` 时按返回条数判断 0/1）。
-- **缓存**：`localStorage` 键 `pm_gh_cache_v1`，TTL 30 分钟（`GH_CACHE_TTL_MS`）。未登录限额 60 次/小时、按客户端 IP，4 个仓库 30 分钟一档最多 32 次/小时，手机+电脑同时开着也不会顶满。
+- **缓存**：`localStorage` 键 `pm_gh_cache_v1`，TTL 30 分钟（`GH_CACHE_TTL_MS`）。未登录限额 60 次/小时、按客户端 IP，4 个仓库 30 分钟一档最多 32 次/小时，手机+电脑同时开着也不会顶满。**全部仓库都失败时不刷新缓存时间戳**（`anySuccess`）：缓存算过期，下次进页面自动重试，配额恢复后不用等 30 分钟、也不用记得点「刷新」。
 - **配额显示**：`/rate_limit`（不消耗限额）与仓库请求并行拉，页脚显示「GitHub 剩余配额 N 次（HH:mm 重置）」。
 - **失败降级**：403/429 → 提示「限额已用尽，HH:mm 之后重试」并**保留上一次成功的数据**；404 → 「仓库不存在或已改名」；网络不通 → 「网络不可达」。任意一个仓库失败只影响它自己的卡片，页面其它部分照常。
 - 仓库列表来自 `pm_project.repo`（`parseRepoSlug` 能认 `owner/repo`、仓库 URL、`git@` 形式），所以加项目就等于加仓库，不用另配清单。
