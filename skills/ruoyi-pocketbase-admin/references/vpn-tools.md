@@ -88,6 +88,14 @@ chmod 600 /etc/nginx/conf.d/vpn.htpasswd && /etc/init.d/nginx reload
 # 弹框里的 realm 文案是 `VPN Panel`（vpn.conf 的 auth_basic），用来区分「nginx 的弹框」和
 # 「日常工作台自己的登录页（要 PocketBase 账号，见下）」。
 
+# 「密码明明对，浏览器却一直弹框 / 一直说不对」的排查顺序（2026-10-14 用户实际遇到）：
+#   1) 先在 N1 上验证服务端：curl -u admin:'密码' http://127.0.0.1:9080/version → 200 就是服务端没问题；
+#   2) 那就是浏览器把**以前保存的旧密码**自动填进了弹框（历史上 vpn.htpasswd 的密码从 mihomo secret 改成过
+#      用户自己的密码，Chrome 还记着旧的）。让用户去 chrome://password-manager/passwords 搜该域名删除旧记录，
+#      或用无痕窗口手输验证一次，成功后正常窗口再输一次并保存。
+#   3) 顺带确认他盯的是不是另一个弹框：控制台登录卡片要的是 PocketBase 账号（`admin@istoreos.lan`），
+#      nginx 那套 `admin`/入口密码在这里一定失败 —— 两个密码不要混用同一串测试。
+
 # 加 TLS（外网访问建议）：需要真证书（自签会被浏览器拦），在 vpn.conf 的 server 里加
 #   listen 9443 ssl;  ssl_certificate /path/fullchain.pem;  ssl_certificate_key /path/privkey.pem;
 # 外网只转发 9443，并在应用里把 VPN 地址换成 https://<域名>:9443/
