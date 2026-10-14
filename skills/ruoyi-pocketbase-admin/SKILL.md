@@ -65,7 +65,7 @@ metadata:
 | 后端 | PocketBase **0.40.5**，`http://192.168.1.168:8090`，容器 `pocketbase`（镜像 `alpine:3.24`，`--restart unless-stopped`，命令 `serve --http=0.0.0.0:8090`） |
 | 挂载 | 宿主 `/opt/pocketbase` → 容器 `/pb`；前端产物落在 `/opt/pocketbase/pb_public` |
 | 管理后台 | `http://192.168.1.168:8090/_/`（自带多语言，含简体中文） |
-| nginx（VPN 面板入口） | N1 上 `apk add nginx` 装的 **nginx-ssl**，监听 **9080**：Basic Auth（用户名固定 `admin`，密码只存在于 `/etc/nginx/conf.d/vpn.htpasswd`，**与 mihomo secret 不是同一个值**）+ 反代 `127.0.0.1:9090` 并注入 mihomo secret；配置 `/etc/nginx/conf.d/vpn.conf` + 播种页 `/etc/nginx/seed/index.html`。**内网用 9080、外网用 19080**（电信网关上 19080 → 内网 9080，前端按访问主机名自动选），见 [vpn-tools.md](references/vpn-tools.md) |
+| nginx（VPN 面板入口） | N1 上 `apk add nginx` 装的 **nginx-ssl**，监听 **9080**：人用的直连走 Basic Auth（用户名固定 `admin`，密码只存在于 `/etc/nginx/conf.d/vpn.htpasswd`，**与 mihomo secret 不是同一个值**）。**应用内嵌的 iframe 不走 Basic**（Chromium 不给子帧带 Basic 凭证，会反复弹框），改走 `/__panel?token=<TOKEN>` 换 Cookie（token 在 nginx 配置与 `sys_dict.vpn_panel_token` 两处，换要一起换）。反代 `127.0.0.1:9090` 并注入 mihomo secret；配置 `/etc/nginx/conf.d/vpn.conf` + 播种页 `/etc/nginx/seed/index.html`。**内网用 9080、外网用 19080**（电信网关上 19080 → 内网 9080，前端按访问主机名自动选），见 [vpn-tools.md](references/vpn-tools.md) |
 | 包管理器 | N1 是 iStoreOS 25.12.5，用 **`apk`**（`opkg` 不存在） |
 | SSH | `root@192.168.1.168:22`，**密码登录**；路由器是 iStoreOS（dropbear），`scp` 必须加 `-O` |
 | 资源上限 | 容器内存限制 96MiB（实测占用约 21MiB）；rootfs 1.2GB，可用约 1.1GB |

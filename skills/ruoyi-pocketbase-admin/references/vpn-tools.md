@@ -27,6 +27,30 @@
 | 内网 | `http://192.168.1.168:8090` | `http://192.168.1.168:9080/` | nginx 本口，直连 |
 | 外网 | `http://luckymian.xyz:18090` | `http://luckymian.xyz:19080/` | 电信网关上「外部 19080 → 192.168.1.168:9080」 |
 
+**两条入口（2026-10-14 起）**：
+
+| 谁在用 | 怎么进 | 认证 |
+| --- | --- | --- |
+| 人（浏览器直接打开/收藏夹） | `http://<主机>:9080/`（外网 `:19080`） | Basic 弹框，用户名 `admin`，密码在 `vpn.htpasswd` |
+| 应用内嵌的 iframe | `http://<主机>:9080/__panel?token=<TOKEN>` | 该口只认 token，`Set-Cookie: vpn_ok=<TOKEN>` 后 302 到 `/`，之后全站靠 Cookie 走 |
+
+为什么内嵌非要绕这一圈：**iframe 里没法带 Basic 凭证**——Chromium 会把 URL 里 `user:pass@` 的
+整个子帧请求直接丢掉（2026-10-14 实测：带凭证的 iframe 连请求都不发，控制帧却照发），
+于是只能靠弹框；而弹框每个浏览器会话、每个 origin 都要来一次，用户体感就是「密码老是重复弹」。
+token → Cookie 之后，内嵌面板零弹框（实测：在一个**没有任何缓存凭证**的 origin 上，
+浏览器从控制台页面里加载 `/__panel`，全程没有一个 401）。
+
+配置要点（`/etc/nginx/conf.d/vpn.conf`）：
+
+- `map_hash_bucket_size 128;` + `map $cookie_vpn_ok $vpn_ok {...}`：Cookie 命中即视为已认证（这个 build 没有 `auth_request` 模块，所以用 map）。
+- `location = /__panel`：校验 `?token=`，种 Cookie，302 到 `/`。
+- `location = /__seed`、`location /__open/`：`internal` 落地页（带 Cookie 的请求由 `if ($vpn_ok = 1) { rewrite … last; }` 转进来），后者用 `proxy_pass http://127.0.0.1:9090$request_uri` 把原 URI 转给 mihomo。
+- WS 那几个路径照旧只认 `?token=<mihomo secret>`；`/_ping` 照旧免认证。
+
+**换 token 要同时改两处**：nginx 里 `__panel`/map 的 token，和 `sys_dict` 里 `dict_type='vpn_panel_token'`
+那条记录（前端读它拼 iframe 地址）。少改一处 = iframe 拿到 401 弹框。token 是**凭据**，
+只存在路由器配置和数据库里，别写进技能文档或前端代码。
+
 前端**按当前访问的主机名自动选端口**：私有网段（10./192.168./172.16-31./localhost）走 9080，其余（域名/公网 IP）走 19080；
 主机名沿用你访问控制台的那个，所以内网 IP、公网 IP、域名三种进法都自洽。先探 9080/19080 里该走的那个，不通再试另一个。
 
@@ -112,6 +136,9 @@ iptables -I INPUT -i br-lan -p tcp --dport 9090 -j DROP     # 撤销：把 -I �
   用户手动切过预设/自定义地址才写 `localStorage.pb_vpn_url`（按设备生效），列表里再切回「自动」＝`clearPersist()` 恢复自动；
   `sys_dict` 的 `vpn_dashboard` 条目现在只是「手动可选项」，不再是默认值。旧版本在「内网（默认）」上存过的那条
   `http://192.168.1.168:9080/` 会在挂载时被识别并清掉，免得带出外网还一直指向内网地址。
+- **iframe 地址 = 入口地址 + `__panel?token=…`**：`entryToken` 读 `sys_dict` 的 `vpn_panel_token`，
+  拼成 `frameSrc`（`openExternal()` 也用它）；没配 token 就退回直连（会弹一次 Basic 框，功能不受影响）。
+  `checkReach()` 探活仍打入口的 `/_ping`（免认证），所以地址可达性不受 token 影响。
 - 探活：`fetch(<origin>/_ping, { mode: 'no-cors' })` + 6 秒超时（`no-cors` 看不到状态码，但请求完成即 resolve；
   `/_ping` 是免认证的，所以不会被 Basic 干扰）。
 - 第一次打开会弹一次 **nginx 的账号密码**（Basic Auth 的浏览器行为，输一次就记住）——这是页面顶栏那句提示的由来。
