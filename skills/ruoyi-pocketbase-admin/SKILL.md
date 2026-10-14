@@ -46,6 +46,7 @@ metadata:
 - **API 建的集合默认没有 `created` / `updated`**。v0.23+ 里它们是可选的 autodate 字段，Dashboard 建集合会默认勾上，纯 API 建要自己声明；缺了它，任何按 `created`/`updated` 排序或读这两个字段的请求都会直接 **HTTP 400**（报错文案是笼统的 `Something went wrong while processing your request.`）。`pnpm setup:pb` 现在会幂等补齐缺失字段，改集合后跑一次即可。
 - **报错别只看前端文案**：400 常见成因就是上面这条、或 filter 里引用了不存在的字段。用 `curl` 直接打 API 定位比看界面快得多。
 - **iStoreOS 的 crond 只在启动时读 crontab**：手工往 `/etc/crontabs/root` 加行不重启 cron，任务永远不会执行（实测加探针 6 分钟无反应，`/etc/init.d/cron restart` 后当分钟就跑）。改完必须 restart。
+- **备份仓库必须私有，且一把公钥只能挂一个仓库**：快照里有 OSS 密钥、超管密码哈希、VPN token；`MianHelperDocker` 建的时候是公开的（已改私有）。同一把 deploy key 挂第二个仓库会 HTTP 422，换仓库要新生成一把（配置项 `SSH_KEY`）。
 
 ## 常用动作
 
@@ -80,7 +81,7 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
 | 包管理器 | N1 是 iStoreOS 25.12.5，用 **`apk`**（`opkg` 不存在） |
 | SSH | `root@192.168.1.168:22`，**密码登录**；路由器是 iStoreOS（dropbear），`scp` 必须加 `-O` |
 | 资源上限 | 容器内存限制 96MiB（实测占用约 21MiB）；rootfs 1.2GB，可用约 1.1GB |
-| 定时备份 | 每周一 03:30（`/etc/crontabs/root` 里 `# pb-backup` 那行）→ `/opt/pb-backup/backup.sh` → 私有仓库 `LuckyMian/n1-pocketbase-backup`；工具在 `/opt/pb-backup/`，源码在 `G:\文档\ChatGPT\ruoyi\backup\` |
+| 定时备份 | 每周一 00:00（`/etc/crontabs/root` 里 `# pb-backup` 那行，`0 0 * * 1`）→ `/opt/pb-backup/backup.sh` → 私有仓库 `LuckyMian/MianHelperDocker` 的 `pb-backup` 分支；工具在 `/opt/pb-backup/`，源码在 `G:\文档\ChatGPT\ruoyi\backup\` |
 
 ## 当前状态与待办（截至 2026-10-14）
 
@@ -95,8 +96,11 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
 - 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
 - 候选下一步：待办的提醒与重复任务、拖拽排序、附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。
-- **定时整容器备份（2026-10-14 上线）**：每周一 03:30 停容器约 23–28 秒打整包快照（31.3MB），
-  提交并 force push 到私有仓库 `LuckyMian/n1-pocketbase-backup`，仓库里带 `restore.sh`，任意
-  docker 主机 clone 后一键还原（已在 N1 上实测还原到 8099 端口，数据 md5 与线上一致）。
-  认证用路由器上的 Ed25519 部署密钥，不落账号令牌；`KEEP_SNAPSHOTS=4` + orphan 覆盖式提交把
-  eMMC 占用稳定在约 170MB。细节、坑与运维命令见 [backup-github.md](references/backup-github.md)。
+- **定时整容器备份（2026-10-14 上线）**：每周一 00:00（= 周日晚上 12 点）停容器约 23–28 秒打
+  整包快照（31.3MB），force push 到**私有**仓库 `LuckyMian/MianHelperDocker` 的 `pb-backup`
+  分支（`main` 留给用户自己用），还原用
+  `git clone -b pb-backup --single-branch … && ./restore.sh`（已在 N1 上实测还原到 8099 端口，
+  数据 md5 与线上一致）。认证用路由器上的 Ed25519 部署密钥（`SSH_KEY` 配置项），不落账号令牌；
+  `KEEP_SNAPSHOTS=4` + orphan 覆盖式提交把 eMMC 占用稳定在约 170MB。
+  **仓库必须私有**——快照含 OSS 密钥与超管密码哈希。细节、坑与运维命令见
+  [backup-github.md](references/backup-github.md)。
