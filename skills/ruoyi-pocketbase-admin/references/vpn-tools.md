@@ -1,8 +1,13 @@
-# 工具 → VPN（nginx 反代 mihomo 的 metacubexd 面板）
+# VPN 面板入口（nginx 反代 mihomo 的 metacubexd 面板）
 
-页面：`views/tools/vpn/Index.vue`，路由 `/tools/vpn`，菜单「工具 → VPN」（`sys_menu` 两条：`/tools` 父级 + `/tools/vpn`，
-图标 `Tools` / `Connection`）。页面本身只是一条地址栏 + 铺满的 `iframe`；
-**面板不是直连 9090，而是走 N1 上新增的 nginx 入口 9080**（2026-10-13 改）。
+> **2026-10-14 改版：页面已下线。** 菜单「工具 → VPN」（`sys_menu` 的 `/tools` + `/tools/vpn`）已删除，
+> `views/tools/vpn/Index.vue` 也已删掉（`fallbackMenu.ts` 同步去掉）。现在入口只有一个：
+> **工作台主页顶部的「打开 VPN 面板」按钮**（`views/dashboard/Index.vue`），点击**新标签**打开面板。
+> 为什么改：内嵌 iframe 拿不到 Basic 凭证（见下），弹框反复出现，用户体感很差；直接新标签打开一切正常。
+> 这页剩下的内容是 nginx 侧怎么配、怎么排查，以及（万一以后要恢复内嵌时的）iframe 认证方案。
+
+面板**不是直连 9090，而是走 N1 上的 nginx 入口 9080**（2026-10-13 起）；
+入口地址由工作台主页那个按钮拼（主机名沿用当前控制台，内网 9080 / 外网 19080）。
 
 ## 现在的链路
 
@@ -128,7 +133,17 @@ chmod 600 /etc/nginx/conf.d/vpn.htpasswd && /etc/init.d/nginx reload
 iptables -I INPUT -i br-lan -p tcp --dport 9090 -j DROP     # 撤销：把 -I 换成 -D
 ```
 
-## 应用侧
+## 应用侧（2026-10-14 改：入口在工作台主页）
+
+- 工作台主页顶部的「打开 VPN 面板」按钮：`openVpnPanel()` → `window.open(vpnPanelUrl, '_blank', 'noopener')`。
+  地址 = 同主机名 + `9080`（私有网段）或 `19080`（域名/公网 IP），路径是入口根 `/`（播种页会写 localStorage 再跳
+  `/ui/metacubexd/#/overview`，所以直接写面板子路径反而可能因为没播种而让人手填密钥）。
+  配了 `sys_dict.vpn_panel_token` 就用 `/__panel?token=…` 的新标签地址（免弹框），没配就裸地址（弹一次 Basic 框，用户名 `admin`）。
+  **页面上只显示裸地址**，带 token 的地址不出现在 UI 里。
+- 旧的 `views/tools/vpn/Index.vue`（地址栏 + iframe 那个专用视图）已删除；`sys_dict.vpn_dashboard`
+  只留给历史/手动用途，前端不再读它。
+
+### 老版本（专用页面）的地址解析，留着参考
 
 - 地址来源优先级（2026-10-14 改）：**下拉选「自动（内网 9080 / 外网 19080）」= 默认** ——
   按 `location.hostname` 判断私有网段选端口（`isPrivateHost()`），拼出 `协议//主机名:9080|19080/`，
