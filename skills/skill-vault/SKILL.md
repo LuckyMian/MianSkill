@@ -36,7 +36,13 @@ powershell -NoProfile -File F:\Codex\Skill\MianSkill\sync.ps1
 2. 新技能不需要往仓库里手工拷贝、也不改脚本：放进 `%USERPROFILE%\.codex\skills\<名字>\` 后会自动被收录为「自建」。
 3. `.system` 与插件自带技能默认不入库（会被客户端更新覆盖，改了也留不住）；确实要备份才加 `-IncludeSystem`。
 4. 官方技能来源只在 `sync.ps1` 的官方来源表里登记。不要为了让它保持「官方（未修改）」而改写文件或伪造哈希 —— 改过就是 `official-modified`，清单会写明「克隆自 X 后独立修改」。
-5. 本机全局 git 配置挂着已失效的代理 `127.0.0.1:10809`：手工 git 命令要带 `-c http.proxy= -c https.proxy=`（`sync.ps1` 内部已自带），GitHub 直连是通的。
+5. 本机全局 git 配置挂着已失效的代理 `127.0.0.1:10809`：手工 git 命令要带 `-c http.proxy= -c https.proxy=`（`sync.ps1` 内部已自带）。GitHub 直连**平时**通，但会间歇被掐：症状是 `fatal: unable to access … OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443`（TCP 端口能连上、TLS 握手被打断），`Test-NetConnection github.com -Port 443` 仍是 True，容易误判成「网络正常」。这时别反复重试，改走能访问 GitHub 的机器的 socks 隧道（N1 侧路由装了 OpenClash，实测可用）：
+   ```powershell
+   ssh -D 11080 -N root@192.168.1.168        # 另开一个窗口常驻（要输密码）
+   git -C F:\Codex\Skill\MianSkill -c http.proxy=socks5h://127.0.0.1:11080 `
+       -c https.proxy=socks5h://127.0.0.1:11080 push origin main
+   ```
+   推完记得 `git fetch origin` 核对 `origin/main` 真的到了那个 commit。
 6. 技能改动必须推送，且推送失败必须报告 —— 本地提交不等于备份完成。
 
 ## 按需选读
