@@ -78,6 +78,13 @@
   Permissions：Metadata=Read、Contents=Read）。没配时接口返回「N1 上还没配置 GitHub 令牌…」，卡片直接把这句显示出来。
   注意：这个文件在 `/opt/pocketbase/pb_hooks/` 里，**会被每周的整容器备份带走**（和 OSS 的 AK/SK 一样），
   所以备份仓库必须私有。
+  **2026-10-15 已配好**（`github_pat_11AX…`，只读细粒度 PAT，Repository access 勾了 5 个仓库：MianHelperDocker /
+  HotPackTest / MianSkill / UltraControlSystem / UnrealPackTimeVerification）。**改令牌的标准动作**是：改开发机
+  副本 `pocketbase-hooks/github.pb.js` 的 `GH_TOKEN` → `scp -O` 覆盖 N1 的
+  `/opt/pocketbase/pb_hooks/github.pb.js` → `docker restart pocketbase`（不要只改一头：本地是占位符时一次 scp
+  就会把 N1 上的真令牌覆盖回 `__GITHUB_TOKEN__`）。验证：以 superuser 登录取 token 后
+  `GET /api/gh/status` 应回 `configured: true` + `remaining`；`GET /api/gh/repo?slug=…` 对 `LuckyMian/MianHelperDocker`
+  应回 `ok: true`、`repo.private: true`。`/api/gh/status` 与 `/api/gh/repo` 都要登录，匿名叫是 401/403。
 - **缓存**：服务端 5 分钟（`GH_CACHE_SECONDS`，多个浏览器刷新不会重复打 GitHub，`force=1` 跳过）+
   前端 `localStorage` 键 `pm_gh_cache_v2`，TTL 30 分钟（`GH_CACHE_TTL_MS`）。**全部仓库都失败时不刷新
   前端缓存时间戳**（`anySuccess`）：缓存算过期，下次进页面自动重试，配好令牌后不用等 30 分钟、也不用点「刷新」。
