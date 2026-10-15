@@ -1,0 +1,3 @@
+interface:
+  display_name: "DingTalk Kanboard Bot"
+  short_description: "Change the DingTalk robot on this Kanboard server"
