@@ -67,12 +67,13 @@ POST /api/oss/fetch  { url }   →   图片字节本身（Content-Type 保持 im
 把 `?prefix=&max-keys=` 也算进去会 `SignatureDoesNotMatch`（URL 上的 query 照常带）。
 删除单个对象则是 `DELETE /<key>`，canonical 为 `/<bucket>/<key>`（正常拼 key，见上面的回收流程）。
 
-## 服务端钩子的四个硬约束（本版本 PocketBase 0.40.5 实测）
+## 服务端钩子的五个硬约束（本版本 PocketBase 0.40.5 实测）
 
-1. **处理器看不到文件级作用域**：`routerAdd` 回调在每个请求时按源码重建，文件里的 `const`/`function`、乃至 `globalThis` 在回调里都是 `undefined`（实测 `typeof OSS_CONFIG === 'undefined'`、`ReferenceError: HELPER_KEY is not defined`）。唯一可靠的桥是 **`$app.store()`**：文件级 `$app.store().set('oss_upload_helpers', {…})`，回调里 `$app.store().get('oss_upload_helpers')`；连 key 都必须用字面量。
+1. **处理器看不到文件级作用域**：`routerAdd` 回调在每个请求时按源码重建，文件里的 `const`/`function`、乃至 `globalThis` 在回调里都是 `undefined`（实测 `typeof OSS_CONFIG === 'undefined'`、`ReferenceError: HELPER_KEY is not defined`）。桥是 **`$app.store()`**：文件级 `$app.store().set('oss_upload_helpers', {…})`，回调里 `$app.store().get('oss_upload_helpers')`；连 key 都必须用字面量。**但只能搬「纯数据」——见第 5 条。**
 2. **JSVM 没有 `require` 模块**（`crypto/hmac`、`encoding/base64`、`os`、`fs` 全是 `Invalid module`），只有 `$security`（md5/sha256/sha512/hs256/hs512/equal/randomString…）。OSS 的 V1 签名要 HMAC-SHA1，所以钩子里自带纯 JS 的 UTF-8 / SHA-1 / HMAC-SHA1 / Base64（已与 Node crypto 对拍一致）。
 3. **`$os.readFile` 返回字节对象**，且**读不存在的文件会触发 Go 层 panic**（JS try/catch 拦不住，整个路由返回 400）。所以配置直接写在钩子文件的 `OSS_CONFIG` 里，不读外部 JSON。`$os.getenv` 对不存在的变量安全（返回 ''），可作环境变量覆盖。
 4. 钩子里的错误默认只变成笼统的 400，排查时要在回调里 `try/catch` 并把 `String(err)` 返回来定位。
+5. **别把函数存进 `$app.store()` 再从回调里调**（2026-10-15 `github.pb.js` 踩过）：回调跑在 JSVM 运行时池的**不同运行时**上，跨运行时调用同一个函数对象会让进程抛 `[PANIC RECOVER] runtime error: invalid memory address or nil pointer dereference`（goja 栈里是 `_add.exec` / `builtin_new` 之类的帧），前端只看到 PocketBase 那句笼统的「Something went wrong while processing your request.」。实测：总览页一次发 6 个并发 `/api/gh/repo`，6 个里挂 4 个；**顺序**发则 100% 成功——所以「手工单条 curl 测试通过」不能证明并发安全。正确做法：**每个回调自带完整逻辑**，`$app.store()` 里只放纯数据（令牌、超时这类配置），或者用只读的常量。顺带：把服务端缓存放 `$app.store()` 里并发读写同样会炸，省这点配额不值当（前端已有 localStorage 缓存）。
 
 （`GET /api/oss/status` 返回的 `dir` 字段就是当前默认上传前缀，改完钩子 `curl` 一下即可确认生效。）
 
