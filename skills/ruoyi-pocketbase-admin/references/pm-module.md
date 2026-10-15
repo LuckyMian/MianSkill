@@ -74,10 +74,16 @@
   把 `Link` 头 `rel="last"` 的页码当本周提交数（没有 `Link` 就按返回条数算 0/1），顺手把
   `open_issues_count` − 开放 PR 数 = 真 issue 数。响应形状：`{slug, ok, error?, repo, openPulls, weekCount, commits, rate, cachedAt}`。
   另有 `GET /api/gh/status`（令牌是否配置 + 剩余配额）用来排查。
-- **令牌**：`github.pb.js` 顶部的 `GH_TOKEN`，建议**只读细粒度 PAT**（Repository access 只勾要显示的仓库；
-  Permissions：Metadata=Read、Contents=Read）。没配时接口返回「N1 上还没配置 GitHub 令牌…」，卡片直接把这句显示出来。
-  注意：这个文件在 `/opt/pocketbase/pb_hooks/` 里，**会被每周的整容器备份带走**（和 OSS 的 AK/SK 一样），
-  所以备份仓库必须私有。
+- **令牌**：`github.pb.js` 顶部的 `GH_TOKEN`，建议**只读细粒度 PAT**（Repository access 勾上所有要显示的
+  仓库；Permissions：Metadata=Read、Contents=Read）。没配时接口返回「N1 上还没配置 GitHub 令牌…」，
+  卡片直接把这句显示出来。注意：这个文件在 `/opt/pocketbase/pb_hooks/` 里，**会被每周的整容器备份带走**
+  （和 OSS 的 AK/SK 一样），所以备份仓库必须私有。
+  **细粒度令牌的 Repository access 是白名单**：漏勾的仓库 GitHub 一律回 404（不是 403），
+  最省事的排查办法是 `GET /api/gh/status`（它会用 `/user/repos` 列出 `accessibleRepos`），
+  或直接 `curl -H "Authorization: Bearer <令牌>" https://api.github.com/repos/<owner>/<repo>`。
+- **盯某个分支**：`pm_project.repo` 支持 `owner/repo#分支`（`parseRepoRef` 解析，缓存键仍用 slug），
+  钩子会带 `sha=<分支>` 拉提交与本周提交数，卡片上的「默认分支」显示实际盯的分支。
+  备份仓库就是典型例子：内容全在 `pb-backup` 分支上，默认分支只有一句 README。
   **2026-10-15 已配好**（`github_pat_11AX…`，只读细粒度 PAT，Repository access 勾了 5 个仓库：MianHelperDocker /
   HotPackTest / MianSkill / UltraControlSystem / UnrealPackTimeVerification）。**改令牌的标准动作**是：改开发机
   副本 `pocketbase-hooks/github.pb.js` 的 `GH_TOKEN` → `scp -O` 覆盖 N1 的
@@ -90,6 +96,9 @@
   前端缓存时间戳**（`anySuccess`）：缓存算过期，下次进页面自动重试，配好令牌后不用等 30 分钟、也不用点「刷新」。
 - **配额显示**：页脚「GitHub 剩余配额 N 次（HH:mm 重置）」现在取的是**令牌**的限额（5000 次/小时），
   由 `/api/gh/repo` 响应里的 `rate` 字段带回。
+- **必须看状态码，不能只看 body**（2026-10-15 踩过）：404/403 的错误体里也有 JSON（`{"message":"Not Found"}`），
+  只判断「body 是不是空」会把「令牌没勾这个仓库」当成取数成功，卡片就显示成「没有读到提交记录」（数字全是 0），
+  看起来像前端 bug。钩子里现在先判 `status`、再判 `json`。
 - **失败降级**：钩子把 GitHub 的错误翻成人话（401 令牌无效、403/429 配额或权限、404 仓库不存在或令牌没授权），
   卡片显示这句话并**保留上一次成功的数据**；未登录/登录过期时前端提示「登录已过期，重新登录后即可显示私有仓库」。
   任意一个仓库失败只影响它自己的卡片。改钩子时别踩 JSVM 的坑（见 [oss-images.md](oss-images.md)）：处理器回调里

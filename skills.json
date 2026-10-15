@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-15T10:57:32+08:00",
+    "generatedAt":  "2026-10-15T11:16:28+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -10,13 +10,13 @@
                        "path":  "skills/dingtalk-kanboard-bot",
                        "description":  "Change the two-way DingTalk (钉钉) robot that fronts this machine\u0027s Kanboard instance: StreamBridge.py reply routing and keywords, the DingTalkNotifier PHP plugin commands and services, the SQLite notification queue, user binding, and onboarding. Use when adding or editing bot commands, reply text or formatting, task notifications, or DingTalk API behavior for this deployment.",
                        "source":  null,
-                       "sha256":  "65976AD6CBE4FE62DDCB8833D371CA4B1439D212FF1F783ED10B3352A238694E",
+                       "sha256":  "01AB818A5A302B3066C9A2A6AE3B9664AEE0813EBA2BAC83C3AD38C0F22C50AF",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\dingtalk-kanboard-bot",
                                               "%USERPROFILE%\\.claude\\skills\\dingtalk-kanboard-bot"
                                           ],
-                       "provenance":  "本地自建（dingtalk-kanboard-bot 目录创建于 2026-09-11）"
+                       "provenance":  "本地自建（dingtalk-kanboard-bot 目录创建于 2026-10-15）"
                    },
                    {
                        "name":  "drawio",
@@ -42,13 +42,13 @@
                        "path":  "skills/ruoyi-pocketbase-admin",
                        "description":  "Develop, extend, configure, or deploy the 日常工作台 frontend at G:\\文档\\ChatGPT\\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project\u0027s frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates.",
                        "source":  null,
-                       "sha256":  "54C5C3D7DEE526064EFDC30D8D637E9B66F4A5874668C2E33B0D2ECCD8321BDF",
+                       "sha256":  "77E43F29BAC778A8BDA8EB74276A0CA247C230B49E8D1A9D3082B054F6E5466B",
                        "files":  16,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
                                               "%USERPROFILE%\\.claude\\skills\\ruoyi-pocketbase-admin"
                                           ],
-                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-12）"
                    },
                    {
                        "name":  "skill-vault",
@@ -56,7 +56,7 @@
                        "path":  "skills/skill-vault",
                        "description":  "Maintain this machine\u0027s skill library and push it to the GitHub backup repo MianSkill — creating, updating, or deleting any skill under ~/.codex/skills, registering official skill sources, regenerating the manifest, and restoring the library on another machine. Use whenever a skill is created, edited, or removed, or when the user asks to back up, sync, push, or move skills; do not use it for git operations on unrelated projects.",
                        "source":  null,
-                       "sha256":  "8E1EAF39B0C2D1FAE767A6D40265F1F84FC11A66AB7AA5BBF32CAAD46646912B",
+                       "sha256":  "A25A5605C35F0145285ABBF6A8AA982EA4C6C2C64D8256FF0F40980A4E32F389",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
@@ -76,7 +76,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\ucs-development",
                                               "%USERPROFILE%\\.claude\\skills\\ucs-development"
                                           ],
-                       "provenance":  "本地自建（ucs-development 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（ucs-development 目录创建于 2026-09-25）"
                    },
                    {
                        "name":  "wow-addon-dev",
@@ -90,7 +90,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\wow-addon-dev",
                                               "%USERPROFILE%\\.claude\\skills\\wow-addon-dev"
                                           ],
-                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-09-12）"
                    }
                ]
 }
