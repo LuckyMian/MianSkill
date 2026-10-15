@@ -7,10 +7,9 @@ metadata:
 
 # 日常工作台（RuoYi 风格 · PocketBase 后端）
 
-> **技能改动必须推送（强制）**：修改本技能或 `%USERPROFILE%\.codex\skills` 下任何技能后，立即执行
+> **技能改动必须推送（强制）**：规则与完整流程见 `$skill-vault`；本技能或 `%USERPROFILE%\.codex\skills` 下任何技能改完后立即执行
 > `powershell -NoProfile -File F:\Codex\Skill\MianSkill\sync.ps1`
-> （复制技能 → 更新 `README.md` / `skills.json` → 提交推送；先看差异用 `-DryRun`，只提交不推送用 `-NoPush`）。
-> 推送失败要如实报告，不要静默跳过。
+> （复制技能 → 更新 `README.md` / `skills.json` → 提交推送；先看差异用 `-DryRun`，只提交不推送用 `-NoPush`）。推送失败要如实报告，不要静默跳过。
 
 `G:\文档\ChatGPT\ruoyi\frontend` 把若依那套「可配置」重新实现了一遍：菜单表驱动路由、字典驱动下拉与颜色、一份字段配置同时驱动查询/表格/表单；后端是 N1 侧路由上的 PocketBase 单容器，**前端构建产物直接放进该容器的 `pb_public`**，两者同容器同卷，迁移时整体搬走。
 

@@ -2,12 +2,14 @@
 
 自用 skill 备份仓库：把平时在用的 AI 技能集中存放，方便换电脑、给其他 AI 工具直接读取，以及长期留档。
 
-> 本文件由 `sync.ps1` 自动生成，请勿手工编辑。最后更新：2026-10-14
+> 本文件由 `sync.ps1` 自动生成，请勿手工编辑。最后更新：2026-10-15
 > 同一份清单的机器可读版本见 [`skills.json`](skills.json)。
 
 ## 快速开始（给 AI 工具 / 新电脑）
 
 每个技能就是 `skills/<名称>/` 下的一个目录，`SKILL.md` 位于该目录根部，拷进 AI 工具的 skills 目录即可生效。
+
+> 总入口是技能 [`skills/skill-vault`](skills/skill-vault/SKILL.md)：新建/更新技能、跑 `sync.ps1` 推送、在新电脑上还原，都从它开始。
 
 ```powershell
 git clone https://github.com/LuckyMian/MianSkill
@@ -32,9 +34,10 @@ robocopy .\MianSkill\skills "$env:USERPROFILE\.claude\skills" /E /XD .git __pyca
 | 名称 | 类型 | 来源 | 版本 · 哈希 | 用途 |
 |------|------|------|-------------|------|
 | `drawio` | 官方（未修改） | [jgraph/drawio-mcp](https://github.com/jgraph/drawio-mcp) `plugins/codex/drawio/skills/drawio` | 固定于 `eebe7de` · SKILL.md SHA256 `5e1d5460fc6a2da7da98ad851841ec174670f42c0b7339835cc709957b9328f7` | Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF. |
-| `ruoyi-pocketbase-admin` | 自建 | 无（本地自建） | 聚合 SHA256 `4ad634fbacc0` | Develop, extend, configure, or deploy the 日常工作台 frontend at G:\文档\ChatGPT\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project's frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates. |
-| `ucs-development` | 自建 | 无（本地自建） | 聚合 SHA256 `71fdf896b654` | Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects. |
-| `wow-addon-dev` | 自建 | 无（本地自建） | 聚合 SHA256 `02a5029c353f` | Develop, migrate, review, and debug World of Warcraft in-game AddOns using Lua, XML, TOC metadata, Blizzard UI code, and the version-matched WoW UI API. Use for Retail or Classic AddOn projects; do not use the Battle.net web API as a substitute for the in-game API. |
+| `ruoyi-pocketbase-admin` | 自建 | 无（本地自建） | 聚合 SHA256 `682b9f2c0787` | Develop, extend, configure, or deploy the 日常工作台 frontend at G:\文档\ChatGPT\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project's frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates. |
+| `skill-vault` | 自建 | 无（本地自建） | 聚合 SHA256 `a25a5605c35f` | Maintain this machine's skill library and push it to the GitHub backup repo MianSkill — creating, updating, or deleting any skill under ~/.codex/skills, registering official skill sources, regenerating the manifest, and restoring the library on another machine. Use whenever a skill is created, edited, or removed, or when the user asks to back up, sync, push, or move skills; do not use it for git operations on unrelated projects. |
+| `ucs-development` | 自建 | 无（本地自建） | 聚合 SHA256 `d3edbbe3ed5a` | Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects. |
+| `wow-addon-dev` | 自建 | 无（本地自建） | 聚合 SHA256 `f9f578086c86` | Develop, migrate, review, and debug World of Warcraft in-game AddOns using Lua, XML, TOC metadata, Blizzard UI code, and the version-matched WoW UI API. Use for Retail or Classic AddOn projects; do not use the Battle.net web API as a substitute for the in-game API. |
 
 ## 来源与修改标记规则
 

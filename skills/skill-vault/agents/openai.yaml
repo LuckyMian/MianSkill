@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Vault (MianSkill)"
+  short_description: "Back up and push the local skill library"
+  default_prompt: "Use $skill-vault to sync my skills to the MianSkill GitHub backup repo."

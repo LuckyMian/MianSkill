@@ -417,6 +417,8 @@ $readme = @"
 
 每个技能就是 ``skills/<名称>/`` 下的一个目录，``SKILL.md`` 位于该目录根部，拷进 AI 工具的 skills 目录即可生效。
 
+> 总入口是技能 [``skills/skill-vault``](skills/skill-vault/SKILL.md)：新建/更新技能、跑 ``sync.ps1`` 推送、在新电脑上还原，都从它开始。
+
 ``````powershell
 git clone $RepoUrl
 ``````

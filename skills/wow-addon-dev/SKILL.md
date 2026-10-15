@@ -5,10 +5,9 @@ description: Develop, migrate, review, and debug World of Warcraft in-game AddOn
 
 # WoW AddOn Development
 
-> **技能改动必须推送（强制）**：修改本技能或 `%USERPROFILE%\.codex\skills` 下任何技能后，立即执行
+> **技能改动必须推送（强制）**：规则与完整流程见 `$skill-vault`；本技能或 `%USERPROFILE%\.codex\skills` 下任何技能改完后立即执行
 > `powershell -NoProfile -File F:\Codex\Skill\MianSkill\sync.ps1`
-> （复制技能 → 更新 `README.md` / `skills.json` → 提交推送；先看差异用 `-DryRun`，只提交不推送用 `-NoPush`）。
-> 推送失败要如实报告，不要静默跳过。
+> （复制技能 → 更新 `README.md` / `skills.json` → 提交推送；先看差异用 `-DryRun`，只提交不推送用 `-NoPush`）。推送失败要如实报告，不要静默跳过。
 
 为目标客户端交付可加载、可验证、符合 WoW 安全模型的插件代码。所有技术结论都要绑定到客户端分支与版本；不要凭记忆编造 API、事件、参数、返回值或 TOC Interface 值。
 
