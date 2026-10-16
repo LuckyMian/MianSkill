@@ -738,7 +738,9 @@ RuoYi 的项目管理模块（`ruoyi-modules/ruoyi-project`）里，任务可以
 - **「发不出去」不是错误**：没绑定钉钉、通知开关关掉、队列写失败都返回 `{"queued":false,"reason":"…"}`
   且退出码 0，RuoYi 只把 reason 显示给用户，任务保存照常成功。
 - 投递沿用桥接进程的 `queue_worker`（每 5 秒 `dingtalk:run --limit 20`），不需要新调度。
-- 验证：`setup-packages\ruoyi-project-assign-verify.py`（真浏览器 + 接口 23 项：校验、入队、正文、
-  重复保存不重复通知、未绑定提示、`nodeIdEmpty` 过滤、界面绑定任务）；临时账号的 Kanboard 绑定用
-  **假钉钉 id `TEST-pm-assign-…`**，所以不会打扰真人。真机投递想单测就用一个已绑定的账号跑
-  `php cli dingtalk:pm-task-assign <json>` 再 `dingtalk:run --limit 5`。
+- 验证：`setup-packages\ruoyi-project-assign-verify.py`（真浏览器 + 接口 30 项：校验、入队、正文、
+  重复保存不重复通知、未绑定提示、`nodeIdEmpty` 过滤、界面绑定任务、合图甘特（节点菱形 + 任务柱）、
+  优先级 P0~P3 下拉、任务列表里改状态）；明细写 `ruoyi-project-assign-verify.log`，临时账号的
+  Kanboard 绑定用 **假钉钉 id `TEST-pm-assign-…`**，所以不会打扰真人。真机投递想单测就用一个已绑定
+  的账号跑 `php cli dingtalk:pm-task-assign <json>` 再 `dingtalk:run --limit 5`。
+  清理残留用 `ruoyi-project-assign-cleanup.py`（`--dry-run` 先看）。
