@@ -24,6 +24,7 @@ Apache on port 801, PHP 8.5.10 at `D:\php`. Everything DingTalk lives in
 | `Service/OnboardingService.php` | `#新人入职` session and Kanboard account creation |
 | `Service/ReimbursementService.php` | 报销助手 wizard: steps, parsing, invoice storage, form saving |
 | `Service/InvoiceService.php` | 发票助手: OCR worker call, ledger rows, CSV export |
+| `Service/ProjectAssignService.php` | RuoYi 项目管理面板的任务指派通知（按姓名查绑定 → 入 `kind=user` 队列） |
 | `Controller/ReimbursementLedgerController.php` + `Service/ReimbursementLedgerService.php` + `Template/reimbursement_ledger/*` | 网页版报销台账：员工自查、财务筛选与核对、CSV、发票原件 |
 | `Schema/Sqlite.php` | Tables and schema version 8 |
 | `Console/*.php` | Thin CLI wrappers that print JSON |
@@ -140,6 +141,7 @@ the Kanboard directory as `cwd` and `CREATE_NO_WINDOW`.
 | `dingtalk:finance-pay <code…>` | 单号列表 | 核对之后的下一步：标记「已打款」（`FinanceService::markPaid()`）。只允许 `verify_status='verified' AND paid_status='none'` → `paid`，记一条 `finance_events(event='paid')`，**不发钉钉消息**；操作人同样来自 `DINGTALK_FINANCE_STAFF_ID` / `DINGTALK_FINANCE_NAME` |
 | `dingtalk:finance-staff <用户名>` | RuoYi/Kanboard 用户名或姓名 | 查 `dingtalk_user_bindings` 换成钉钉 staff id，供 RuoYi「我的报销」把范围钉死到登录人；没绑定就退出码 3，最后一行是给人看的一句话 |
 | `dingtalk:reimbursement-options` | none | 网页表单选项：单据类型 + `teams`（5 个团队）+ 科目（`subjects` 扁平值、`categories` 两级结构），都直接读 `READY_TYPES` / `TEAMS` / `CATEGORIES` |
+| `dingtalk:pm-task-assign <json>` | 指派 JSON 文件路径（RuoYi 侧先落盘） | RuoYi 项目管理面板指派任务负责人后，给本人私聊一条「任务指派」（`kind=user`，走同一条 `dingtalk_notifications` 队列）。输出 `{"queued":true,"staff_id":…,"name":…}` 或 `{"queued":false,"reason":"…"}`，**「发不出去」也是退出码 0**（只有文件读不到才非 0）。详见「RuoYi 项目任务指派通知」 |
 | `dingtalk:reimbursement-web-save <json>` | 草稿 JSON 文件路径 | RuoYi 面板「新建报销单」；JSON 里 `user` 是 RuoYi/Kanboard 用户名，服务侧查 `dingtalk_user_bindings` 拿 staff id，发票路径由调用方落盘后传入 |
 | `dingtalk:invoice-scan` | none | `DINGTALK_STAFF_ID`, `DINGTALK_INVOICE_FILES` |
 | `dingtalk:invoice-list` | none | `DINGTALK_STAFF_ID` |
@@ -376,7 +378,9 @@ self-healing from the service, as `InvoiceService::ensureTable` does.
 DingTalk staff id), `public_url`, `reminder_time`, `finance_group` (Kanboard 用户组名，
 默认 `财务`), `finance_staff_ids` (额外的钉钉 id 名单，默认只有机器人持有者
 `202124090427574057`), `finance_recipients` (非空时财务提醒只发这些钉钉 id；现在为了让
-真机演练不打扰李雪、刘李，指向 `202124090427574057` = 欧阳冕)。
+真机演练不打扰李雪、刘李，指向 `202124090427574057` = 欧阳冕)，
+`assign_notify_enabled`（RuoYi 任务指派通知开关，默认 true）、`ruoyi_public_url`
+（指派通知里「查看」链接的前缀，现在是 `http://www.figgo.pro:801/ruoyi`）。
 
 Validation in `Service/Config.php`: when `enabled` is true it requires `project_ids`,
 `app_key`, `app_secret`, `robot_code`, and at least one of `test_group_id` or
@@ -717,3 +721,26 @@ RuoYi 的「财务管理」下现在有两页：**报销台账**（财务）和*
   断言没有识别/核对按钮、有查看/复制/重新打印）。两个脚本都会自己造临时账号和测试单，
   跑完删掉；**测试单一律用 `TEST-`/`WEB-PROBE-1` 这类假 staff id**，不要拿真人的钉钉 id
   建单，否则本人会收到真实提醒（2026-09-29 就踩过一次）。
+
+## RuoYi 项目任务指派通知（2026-10-16 新增）
+
+RuoYi 的项目管理模块（`ruoyi-modules/ruoyi-project`）里，任务可以挂到项目节点上（`pm_task.node_id`），
+**挂在节点上的任务必须有负责人**。负责人发生变化时，RuoYi 侧同步调
+`dingtalk:pm-task-assign <json>`，由这里给本人发一条私聊 —— RuoYi 不重写钉钉实现，和财务一个路子。
+
+- 调用方：`PmNotifyServiceImpl`（RuoYi）把参数写成 UTF-8 JSON 临时文件交给 CLI，cli 约定仍是
+  「最后一行是一行 JSON」，超时 15 秒；RuoYi 侧开关是 application yml 的 `kanboard.assign-notify`。
+- 入参字段：`assignee`（负责人姓名，RuoYi 昵称＝Kanboard 姓名）、`task_id`、`task_title`、
+  `project_id`、`project_name`、`node_code`、`node_name`、`due_date`、`actor`、`event_at`（秒，做去重键）。
+- 去重键 `pmtask:<task_id>:<staff_id>:<event_at>`：同一次指派重复调用只发一条；换人/重新指派是新的一条。
+- 文案（纯文本，不带 `dtmd://`，所以走 `sampleText`）：
+  `【任务指派】飞戈数字管理后台` / 项目 / 节点 / 任务 / 负责人 / 指派 / 到期 / `查看：{ruoyi_public_url}/project/detail/<project_id>`。
+- **「发不出去」不是错误**：没绑定钉钉、通知开关关掉、队列写失败都返回 `{"queued":false,"reason":"…"}`
+  且退出码 0，RuoYi 只把 reason 显示给用户，任务保存照常成功。
+- 投递沿用桥接进程的 `queue_worker`（每 5 秒 `dingtalk:run --limit 20`），不需要新调度。
+- 验证：`setup-packages\ruoyi-project-assign-verify.py`（真浏览器 + 接口 30 项：校验、入队、正文、
+  重复保存不重复通知、未绑定提示、`nodeIdEmpty` 过滤、界面绑定任务、合图甘特（节点菱形 + 任务柱）、
+  优先级 P0~P3 下拉、任务列表里改状态）；明细写 `ruoyi-project-assign-verify.log`，临时账号的
+  Kanboard 绑定用 **假钉钉 id `TEST-pm-assign-…`**，所以不会打扰真人。真机投递想单测就用一个已绑定
+  的账号跑 `php cli dingtalk:pm-task-assign <json>` 再 `dingtalk:run --limit 5`。
+  清理残留用 `ruoyi-project-assign-cleanup.py`（`--dry-run` 先看）。

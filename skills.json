@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-17T10:55:57+08:00",
+    "generatedAt":  "2026-10-17T10:56:21+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -10,7 +10,7 @@
                        "path":  "skills/dingtalk-kanboard-bot",
                        "description":  "Change the two-way DingTalk (钉钉) robot that fronts this machine\u0027s Kanboard instance: StreamBridge.py reply routing and keywords, the DingTalkNotifier PHP plugin commands and services, the SQLite notification queue, user binding, and onboarding. Use when adding or editing bot commands, reply text or formatting, task notifications, or DingTalk API behavior for this deployment.",
                        "source":  null,
-                       "sha256":  "01AB818A5A302B3066C9A2A6AE3B9664AEE0813EBA2BAC83C3AD38C0F22C50AF",
+                       "sha256":  "31AF048A30F12A94F23D78ED5C9D16142D5929521D1DA33BC0231DA609E3B413",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\dingtalk-kanboard-bot",
