@@ -24,12 +24,12 @@ $resolvedPlugin = (Resolve-Path -LiteralPath $PluginRoot).ProviderPath.TrimEnd('
 $targetPath = Join-Path $ModRoot $AddonId
 
 if ($Remove) {
-    if (-not (Test-Path -LiteralPath $targetPath)) {
+    $link = Get-Item -LiteralPath $targetPath -Force -ErrorAction SilentlyContinue
+    if (-not $link) {
         Write-Host "No development link exists at $targetPath"
         exit 0
     }
 
-    $link = Get-Item -LiteralPath $targetPath -Force
     if (-not ($link.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw "Refusing to remove a real directory: $targetPath"
     }
@@ -41,7 +41,7 @@ if ($Remove) {
     if (-not $linkTarget) {
         throw "Cannot determine the target of $targetPath"
     }
-    $resolvedLinkTarget = (Resolve-Path -LiteralPath $linkTarget).ProviderPath.TrimEnd('\')
+    $resolvedLinkTarget = [IO.Path]::GetFullPath($linkTarget).TrimEnd('\')
     if ($resolvedLinkTarget -ne $resolvedPlugin) {
         throw "Link target mismatch. Expected '$resolvedPlugin', found '$resolvedLinkTarget'."
     }
@@ -56,8 +56,8 @@ if ($Remove) {
     exit 0
 }
 
-if (Test-Path -LiteralPath $targetPath) {
-    $existing = Get-Item -LiteralPath $targetPath -Force
+$existing = Get-Item -LiteralPath $targetPath -Force -ErrorAction SilentlyContinue
+if ($existing) {
     if (-not ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw "Refusing to replace a real directory: $targetPath"
     }
@@ -66,7 +66,7 @@ if (Test-Path -LiteralPath $targetPath) {
     }
 
     $existingTarget = @($existing.Target)[0]
-    $resolvedExistingTarget = (Resolve-Path -LiteralPath $existingTarget).ProviderPath.TrimEnd('\')
+    $resolvedExistingTarget = [IO.Path]::GetFullPath($existingTarget).TrimEnd('\')
     if ($resolvedExistingTarget -eq $resolvedPlugin) {
         Write-Host "Development link already exists: $targetPath -> $resolvedPlugin"
         exit 0
