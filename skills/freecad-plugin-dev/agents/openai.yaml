@@ -1,0 +1,4 @@
+interface:
+  display_name: "FreeCAD Plugin Dev"
+  short_description: "Develop and publish FreeCAD 1.1 Python workbenches"
+  default_prompt: "Use $freecad-plugin-dev to implement and verify this FreeCAD plugin change."

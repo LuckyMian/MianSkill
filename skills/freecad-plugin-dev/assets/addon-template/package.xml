@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+    <name>__PACKAGE_NAME__</name>
+    <description>__DESCRIPTION__</description>
+    <icon>resources/icons/template.svg</icon>
+    <version>0.1.0</version>
+    <date>__RELEASE_DATE__</date>
+    <maintainer email="__MAINTAINER_EMAIL__">__MAINTAINER__</maintainer>
+    <license>__LICENSE__</license>
+    <url type="repository" branch="main">https://github.com/LuckyMian/FreeCad_Plugins</url>
+    <content>
+        <workbench>
+            <name>__WORKBENCH_NAME__</name>
+            <subdirectory>./</subdirectory>
+        </workbench>
+    </content>
+</package>

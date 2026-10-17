@@ -37,6 +37,20 @@
                        "provenance":  "官方技能，来源 https://github.com/jgraph/drawio-mcp 的 plugins/codex/drawio/skills/drawio，固定版本 eebe7de，与本机文件哈希一致，未做修改"
                    },
                    {
+                       "name":  "freecad-plugin-dev",
+                       "type":  "own",
+                       "path":  "skills/freecad-plugin-dev",
+                       "description":  "Develop, test, package, and publish FreeCAD 1.1 Python workbenches in the LuckyMian FreeCad_Plugins repository at F:\\Codex\\Freecad. Use for workbench commands, Qt panels, FreeCAD API integration, addon metadata, development linking, or plugin delivery in this repository; do not use for FreeCAD C++ modules, generic CAD modeling, or unrelated addons.",
+                       "source":  null,
+                       "sha256":  "2748706D2C81459E8C4B645E678663CB85A99DFFD573A7A04E9671838F54A50C",
+                       "files":  15,
+                       "installTargets":  [
+                                              "%USERPROFILE%\\.codex\\skills\\freecad-plugin-dev",
+                                              "%USERPROFILE%\\.claude\\skills\\freecad-plugin-dev"
+                                          ],
+                       "provenance":  "本地自建（freecad-plugin-dev 目录创建于 2026-10-17）"
+                   },
+                   {
                        "name":  "ruoyi-pocketbase-admin",
                        "type":  "own",
                        "path":  "skills/ruoyi-pocketbase-admin",
