@@ -127,10 +127,14 @@
   单元格是 `{ text, image? }`（image 是 OSS key）。`text` 保留一份 Markdown 镜像，供「复制 MD」、旧数据导入和搜索；
   老表只有 `text` 时，`normalizeItem()` / `tableDataOf()` 会从 Markdown 推导 `table_data`。
 - **单元格编辑**：双击**单元格**进入该格的 contenteditable，不是编辑整张表的 Markdown；Enter/Esc/失焦都是确定输入，
-  Shift+Enter 换行。**进入编辑时会全选原文字**（默认的「列 1 / 内容」直接输入就能覆盖，不会追加）。
+  Shift+Enter 换行。**默认单元格不存真实文字**，只显示浅色提示文本（表头 `列 N`、正文 `内容`）；
+  双击默认格是空编辑框，直接输入即可。用户已经输入的内容双击时光标放在末尾，不选中覆盖。
   指针捕获会把 dblclick 改派到 stage，所以 `onDoubleClick()` 必须用 `elementFromPoint` 找
   `[data-table-cell]`，再调用 `CanvasItemView` 暴露的 `startCellEdit()`；单击单元格在 `onPointerDown()` 里
   用 `data-table-row/col` 记录选中格。
+- **默认占位/旧数据**：`DEFAULT_TABLE_DATA` 的单元格 `text` 为空；`CanvasTableCell` 用 `is-placeholder`
+  和 contenteditable 的 `:empty::before` 显示提示。旧版默认表（`列 1/2/3` + `内容`）在 `normalizeItem()` 里
+  用 `isLegacyDefaultTable()` 识别并转成空单元格，避免把旧占位当成用户文字。
 - **行/列与图片**：选中表格后操作栏是 `+行 / +列 / 插图 / 删行 / 删列 / 删图 / 复制 MD`。
   插图走 OSS `canvas/`，存 key；`refreshSignedUrls()` 已把 `table_data` 里的 image key 一起签名。
   单元格图片最大 240×180，图片下方可以继续放文字；删图/× 只移除引用。

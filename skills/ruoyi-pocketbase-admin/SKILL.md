@@ -103,7 +103,8 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
   彻底消除候选词被挤到第二行），并去掉双击编辑临时跳 100%/居中（原地编辑，视口不动）。
   详见 [canvas-module.md](references/canvas-module.md) 的「文本框自动宽高 + Ctrl+C / Ctrl+V 段落」。
 - **无限画布 2026-10-19 加 WYSIWYG 表格**：新 `kind='table'`，`table_data`(json) 存单元格；双击单个单元格编辑，
-  进入编辑全选原文字，`Ctrl+V` 可直接把图片贴进单元格；`+行/+列/插图/删行/删列` 在操作栏；
+  默认单元格是浅色提示文本（旧默认表自动迁移），用户已输入内容双击不覆盖、光标在末尾；
+  `Ctrl+V` 可直接把图片贴进单元格；`+行/+列/插图/删行/删列` 在操作栏；
   单元格可放 OSS 图片；`ResizeObserver` 让行高列宽随内容自适应；
   仍支持粘贴 Markdown 表格/在文字框输入表格自动转换，`text` 保留 Markdown 镜像。
   详见 [canvas-module.md](references/canvas-module.md) 的「WYSIWYG 表格」。

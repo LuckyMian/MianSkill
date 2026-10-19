@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-19T16:32:03+08:00",
+    "generatedAt":  "2026-10-19T16:34:56+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -56,7 +56,7 @@
                        "path":  "skills/ruoyi-pocketbase-admin",
                        "description":  "Develop, extend, configure, or deploy the 日常工作台 frontend at G:\\文档\\ChatGPT\\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project\u0027s frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates.",
                        "source":  null,
-                       "sha256":  "E4F7A792AE9C82472D4B955B4C39C4808E45AB43FB32ACCD71B8976F6922628F",
+                       "sha256":  "CD98AEC9F110F155DD64305D3A5481E4B4C68587E22E70BD7994850515372C9D",
                        "files":  16,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
