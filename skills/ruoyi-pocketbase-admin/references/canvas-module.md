@@ -97,6 +97,7 @@
   图片照旧转存 OSS，地址不是图片就贴链接卡片，其余纯文本走 `store.addText(pointerWorld, text)`。
 - **文本框默认宽度上限 `TEXT_MAX_WIDTH = 280`**（`utils/textMetrics.ts`）：
   `fitTextBox()` 先用隐藏探针量「这段文字不换行有多宽」，宽度取 `min(280, 自然宽度)`；超过 280 才开始折行。
+  这里的 280 是默认字号 20px 下的值，角手柄把字号放大时会按 `字号/20` 同比放大上限（不然编辑一次就会被压窄）。
   高度由 `textBoxHeight()` 按当前宽度量出来，始终贴合文字（不再是固定的 72，也不保留手动拉高的空白）。
 - **编辑时实时量尺寸，但不每帧写库**：`editBox` 只驱动 textarea 的预览宽高，提交时把最终的 `w/h/text` 一起
   `applyPatches()`；Esc 取消只丢弃 `editBox`，不会留下中间尺寸。空文字仍然软删除。
