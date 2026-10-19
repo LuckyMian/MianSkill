@@ -121,28 +121,26 @@
 - 新建空文本时编辑框是一个最小宽度的插入符框（`min-width: 24px`、一行高），输入后随文字增长；
   没有文字时提交仍然软删除。旧版 280×72 空框占位已经去掉。
 
-## Markdown 表格（2026-10-19）
+## WYSIWYG 表格（2026-10-19）
 
-- **数据**：`kind='table'`，表格源码存在 `text`，格式就是简单的 Markdown 表格：
-
-  ```
-  | 名称 | 数量 |
-  | :--- | ---: |
-  | 苹果 | 3 |
-  ```
-
-  第二行是分隔行，支持 `:---` 左对齐 / `---:` 右对齐 / `:---:` 居中；单元格内的竖线用 `\|` 转义。
-- **解析与测量**：`utils/markdownTable.ts` 的 `parseMarkdownTable()`；`utils/tableMetrics.ts` 用隐藏表格量
-  自然宽度（300–720 世界像素）和指定宽度下的高度。`CanvasItemView` 的 `.canvas-item__table` 渲染表头、
-  隔行浅色和单元格对齐。
-- **创建入口**：工具栏「表格」、空白处右键「新建表格」、粘贴一段 Markdown 表格，或在普通文字框里输入完整表格后提交——
-  `finishTextEdit()` 检测到 `parseMarkdownTable(text)` 成功时会把 `kind` 改成 `table`，撤销栈里记一条「转换为表格」。
-- **编辑**：双击表格或操作栏「编辑表格」，内联编辑 Markdown 源码（等宽字体）；Esc/失焦都是确定输入。
-  提交时宽度保持用户拖过的值，只在行数/换行变多时向下补高度；拖左右边手柄改宽度时也会按新宽度重算高度。
-  操作栏「复制 Markdown」复制源码。
-- **无效格式**：解析失败仍保留 `text`，渲染层显示「表格格式」提示，不丢内容也不崩。
-- **数据库**：`work_canvas_item.kind` 的 select 必须包含 `table`，老库跑一次 `pnpm setup:pb`；
-  `normalizeItem()` 的白名单和 `CanvasItemKind` 也已包含 table。
+- **数据**：`kind='table'`，`table_data`(json) 存 `{ rows: CanvasTableCell[][], aligns? }`，第一行是表头，
+  单元格是 `{ text, image? }`（image 是 OSS key）。`text` 保留一份 Markdown 镜像，供「复制 MD」、旧数据导入和搜索；
+  老表只有 `text` 时，`normalizeItem()` / `tableDataOf()` 会从 Markdown 推导 `table_data`。
+- **单元格编辑**：双击**单元格**进入该格的 contenteditable，不是编辑整张表的 Markdown；Enter/Esc/失焦都是确定输入，
+  Shift+Enter 换行。指针捕获会把 dblclick 改派到 stage，所以 `onDoubleClick()` 必须用 `elementFromPoint` 找
+  `[data-table-cell]`，再调用 `CanvasItemView` 暴露的 `startCellEdit()`；单击单元格在 `onPointerDown()` 里
+  用 `data-table-row/col` 记录选中格。
+- **行/列与图片**：选中表格后操作栏是 `+行 / +列 / 插图 / 删行 / 删列 / 删图 / 复制 MD`。
+  插图走 OSS `canvas/`，存 key；`refreshSignedUrls()` 已把 `table_data` 里的 image key 一起签名。
+  单元格图片最大 240×180，图片下方可以继续放文字；删图/× 只移除引用。
+- **自适应**：`CanvasItemView` 用 `ResizeObserver` 监听真实 `<table>` 的自然尺寸并 emit `fit`；
+  stage 用 `setItemFields` 更新 `w/h`（不进撤销栈，撤销内容后自动重算）。表格 `width:max-content`、
+  `table-layout:auto`，单元格 `min-width:80px / max-width:280px`，所以列宽随内容增长到 280 后换行，
+  行高随图片/多行文字增长。表格不显示缩放手柄，避免和 auto-fit 打架。
+- **创建/导入**：工具栏「表格」、空白右键「新建表格」、粘贴 Markdown 表格、或在文字框里输入完整表格后提交
+  （自动转成 `table_data`）都能创建。`table_data` 是新增 json 字段，老库要跑 `pnpm setup:pb`。
+- **OSS 回收**：`itemImageKeys()` 把元素 `oss_key` 和单元格 `image` 一起算进去；彻底删画布/元素时会查
+  `table_data` 引用，避免漏回收。
 
 ## 粘贴链接：是图片就转存，不是图片就贴成链接卡片（2026-10-14）
 
