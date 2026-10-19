@@ -103,7 +103,8 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
   彻底消除候选词被挤到第二行），并去掉双击编辑临时跳 100%/居中（原地编辑，视口不动）。
   详见 [canvas-module.md](references/canvas-module.md) 的「文本框自动宽高 + Ctrl+C / Ctrl+V 段落」。
 - **无限画布 2026-10-19 加 WYSIWYG 表格**：新 `kind='table'`，`table_data`(json) 存单元格；双击单个单元格编辑，
-  `+行/+列/插图/删行/删列` 在操作栏；单元格可放 OSS 图片；`ResizeObserver` 让行高列宽随内容自适应；
+  进入编辑全选原文字，`Ctrl+V` 可直接把图片贴进单元格；`+行/+列/插图/删行/删列` 在操作栏；
+  单元格可放 OSS 图片；`ResizeObserver` 让行高列宽随内容自适应；
   仍支持粘贴 Markdown 表格/在文字框输入表格自动转换，`text` 保留 Markdown 镜像。
   详见 [canvas-module.md](references/canvas-module.md) 的「WYSIWYG 表格」。
 - **项目管理（2026-10-14 上线）**：项目总览 `/pm/overview`（项目进度卡 + 模块进度表 + 近 7 天完成 + GitHub 仓库卡）、需求看板 `/pm/board`（6 列看板、桌面原生拖拽改状态、触屏降级为下拉、详情抽屉自动保存、需求转待办、回收站软删除）、项目与模块 `/pm/setup`（schema CRUD）；顶栏全站「+ 想法」（`Alt+I`）+ 工作台「项目进度」卡。**GitHub 数据改走服务端代理钩子 `/api/gh/repo`**（令牌只在 N1 的 `pb_hooks/github.pb.js` 里，浏览器拿不到，所以能显示私有仓库；服务端缓存 5 分钟 + 前端 30 分钟，页脚显示令牌剩余配额）。细节见 [pm-module.md](references/pm-module.md)。

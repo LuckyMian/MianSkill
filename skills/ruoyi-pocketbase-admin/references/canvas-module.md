@@ -127,12 +127,15 @@
   单元格是 `{ text, image? }`（image 是 OSS key）。`text` 保留一份 Markdown 镜像，供「复制 MD」、旧数据导入和搜索；
   老表只有 `text` 时，`normalizeItem()` / `tableDataOf()` 会从 Markdown 推导 `table_data`。
 - **单元格编辑**：双击**单元格**进入该格的 contenteditable，不是编辑整张表的 Markdown；Enter/Esc/失焦都是确定输入，
-  Shift+Enter 换行。指针捕获会把 dblclick 改派到 stage，所以 `onDoubleClick()` 必须用 `elementFromPoint` 找
+  Shift+Enter 换行。**进入编辑时会全选原文字**（默认的「列 1 / 内容」直接输入就能覆盖，不会追加）。
+  指针捕获会把 dblclick 改派到 stage，所以 `onDoubleClick()` 必须用 `elementFromPoint` 找
   `[data-table-cell]`，再调用 `CanvasItemView` 暴露的 `startCellEdit()`；单击单元格在 `onPointerDown()` 里
   用 `data-table-row/col` 记录选中格。
 - **行/列与图片**：选中表格后操作栏是 `+行 / +列 / 插图 / 删行 / 删列 / 删图 / 复制 MD`。
   插图走 OSS `canvas/`，存 key；`refreshSignedUrls()` 已把 `table_data` 里的 image key 一起签名。
   单元格图片最大 240×180，图片下方可以继续放文字；删图/× 只移除引用。
+  **粘贴图片**：在单元格编辑状态下直接 `Ctrl+V`（`TableCellBody` 的 `@paste` 取 image File 后 emit 给 stage），
+  或表格选中但未编辑时 `Ctrl+V` 贴进当前高亮格；没有选中表格时仍按老逻辑贴成普通画布图片。
 - **自适应**：`CanvasItemView` 用 `ResizeObserver` 监听真实 `<table>` 的自然尺寸并 emit `fit`；
   stage 用 `setItemFields` 更新 `w/h`（不进撤销栈，撤销内容后自动重算）。表格 `width:max-content`、
   `table-layout:auto`，单元格 `min-width:80px / max-width:280px`，所以列宽随内容增长到 280 后换行，
