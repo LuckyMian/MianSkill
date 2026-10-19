@@ -86,6 +86,23 @@ This is a standing user requirement, not a one-off style choice:
   `plus-ui/src/views/project/people/PersonStatusBoard.vue`, and
   `plus-ui/src/assets/styles/components/_page-shell.scss` (`content-stack`).
 
+## People AI analysis (RuoYi)
+
+- Endpoint: `GET /project/people/ai-analysis`; `?refresh=true` bypasses the cache.
+- `PeopleAiAnalysisService` calls DeepSeek's OpenAI-compatible endpoint with
+  `deepseek-flash`. The server cache is 1 hour, and the browser panel also caches
+  the result for 1 hour. This is a **low-frequency** request by user requirement.
+- The analysis covers the whole board (not the department filter): personnel
+  load, task clashes, overdue and idle people, plus short recommendations.
+- The response is structured JSON (`sections[].items[]`); the UI renders short
+  bullets. Do not return large paragraphs; keep each item under ~120 chars.
+- `DEEPSEEK_API_KEY` lives only in `D:\RuoYi\run-ruoyi.cmd` (gitignored). Never
+  commit it, log it, or paste it into this skill or a repository. `application.yml`
+  only contains the `${DEEPSEEK_API_KEY:}` placeholder.
+- Frontend: `plus-ui/src/views/project/people/AiAnalysisPanel.vue`.
+- Layout: the AI panel sits in the department-tree footer (bottom-left); the
+  people Gantt fills the remaining right-column height and both bottom edges align.
+
 ## Workflow
 
 1. Read `references/interaction-logic.md` for current routing, commands, message
