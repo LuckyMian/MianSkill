@@ -102,12 +102,11 @@
 - **编辑框是 `contenteditable` div，不再用 textarea（2026-10-19 最终方案）**：
   `width: max-content`、`max-width: textMaxWidth(fontSize) + 14`（左右 padding + 边框）、`min-height` 一行；
   浏览器自己排版，输入法候选串天然参与宽高计算，**不再依赖 input / composition 事件时序**，也不会被固定在
-  上一版宽度上。提交时读 `innerText`，把 `w/h/text` 一起 `applyPatches()`；Esc 直接丢弃编辑内容。
+  上一版宽度上。提交时读 `innerText`，把 `w/h/text` 一起 `applyPatches()`；Esc 与失焦一样都是确定输入。
   `wrap_fixed=true` 的文本编辑时用 `width: item.w + 16` 固定折行宽度，高度仍自适应。
   粘贴走纯文本（`@paste.prevent` 后插入文本节点），不把网页样式带进画布。
-- **Esc 是取消不是提交**：编辑已有文字时 Esc 只丢弃草稿、保留原文字；新建文本框时进入编辑前的文字是空的，
-  按 Esc 要把**整个元素软删除**，不能只丢掉输入内容、留下一个「双击输入文字」的空占位。
-  `editingOriginalText` 记录进入编辑前的文字，用来区分这两种情况。
+- **Esc 是确定输入，不是撤销**：编辑已有文字或新建文字，按 Esc 都保留当前输入并提交；
+  只有内容为空时才软删除（新建后直接 Esc 不会留下「双击输入文字」的空占位）。
 - **`font-family: inherit` 必须保留**：历史坑是 textarea 默认 `monospace`，和度量探针/文字元素字体不一致，
   同一段文字在编辑框里更宽，拼音或拉丁字母很容易被挤到下一行。
 - **编辑文字不改视口**：双击新建/编辑都在当前 zoom 下原地进行，编辑框跟着世界层缩放；
