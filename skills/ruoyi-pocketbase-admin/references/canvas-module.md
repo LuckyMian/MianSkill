@@ -4,13 +4,13 @@
 `src/components/CanvasBoard/`（`CanvasSidebar` / `CanvasStage` / `CanvasItemView` / `CanvasToolbar` / `CanvasContextMenu`）+
 `src/stores/canvas.ts`（数据、几何、撤销、自动保存）。路由 `/work/canvas`，菜单名「无限画布」。
 
-一块画布 = 一份布局：能放**图片 / 文字便签 / 链接卡片 / 流程节点 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存；
+一块画布 = 一份布局：能放**图片 / 文字便签 / Markdown 表格 / 链接卡片 / 流程节点 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存；
 元素之间可以**连线**（流程图），画布支持**全屏/专注模式**。
 
 ## 数据模型
 
 - `work_canvas`：`title`、`theme`(dark/light)、`viewport`(json `{x,y,zoom}`)、`sort`、`trashed`、`trashed_at`。
-- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/link/frame/node/edge) + `oss_key`/`source_url` +
+- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/table/link/frame/node/edge) + `oss_key`/`source_url` +
   几何（`x`/`y`/`w`/`h`/`rotation`/`z`）+ `crop`(json 归一化) + `flip_h`/`flip_v` + `color`/`text`/`font_size` +
   `frame_id`（所属分组框 id，空=顶层）+ `wrap_fixed`（文本框宽度是否被用户手动固定）+ `deleted`/`deleted_at` +
   连线专用 `from_id`/`to_id`（两端元素 id）/`from_anchor`/`to_anchor`/`edge_style`/`arrow`。
@@ -22,8 +22,8 @@
    缩放框时子元素同比例位移 + 缩放（文字项同步改 `font_size`）。拖动结束按「中心点落在哪个框里」重新归属，
    所以拖进/拖出框是自然发生的，不需要额外的挂载操作。不支持框套框。
 
-3. **`kind` 是 select 字段，加类型要扩值**。`link`（链接卡片，见下面「粘贴链接」一节）就是 2026-10-14 加的第六种值；
-   扩值由 `pnpm setup:pb` 幂等完成（`ensureCollection` 对 select 只做并集扩值）——**老库不跑一次脚本，前端发 `kind='link'` 会被 PB 400 掉**。
+3. **`kind` 是 select 字段，加类型要扩值**。`link`（链接卡片，2026-10-14）和 `table`（Markdown 表格，2026-10-19）都是后加的；
+   扩值由 `pnpm setup:pb` 幂等完成（`ensureCollection` 对 select 只做并集扩值）——**老库不跑一次脚本，前端发新 `kind` 会被 PB 400 掉**。
    前端 `normalizeItem()` 里也有一份 kind 白名单，漏了会把新类型静默当成 `image`。
 
 ## 流程图：流程节点 + 连线
@@ -120,6 +120,29 @@
   老记录默认 false，但**不会在加载时批量改几何**（避免悄悄改动用户已有画布），双击编辑一次即按新规则贴合。
 - 新建空文本时编辑框是一个最小宽度的插入符框（`min-width: 24px`、一行高），输入后随文字增长；
   没有文字时提交仍然软删除。旧版 280×72 空框占位已经去掉。
+
+## Markdown 表格（2026-10-19）
+
+- **数据**：`kind='table'`，表格源码存在 `text`，格式就是简单的 Markdown 表格：
+
+  ```
+  | 名称 | 数量 |
+  | :--- | ---: |
+  | 苹果 | 3 |
+  ```
+
+  第二行是分隔行，支持 `:---` 左对齐 / `---:` 右对齐 / `:---:` 居中；单元格内的竖线用 `\|` 转义。
+- **解析与测量**：`utils/markdownTable.ts` 的 `parseMarkdownTable()`；`utils/tableMetrics.ts` 用隐藏表格量
+  自然宽度（300–720 世界像素）和指定宽度下的高度。`CanvasItemView` 的 `.canvas-item__table` 渲染表头、
+  隔行浅色和单元格对齐。
+- **创建入口**：工具栏「表格」、空白处右键「新建表格」、粘贴一段 Markdown 表格，或在普通文字框里输入完整表格后提交——
+  `finishTextEdit()` 检测到 `parseMarkdownTable(text)` 成功时会把 `kind` 改成 `table`，撤销栈里记一条「转换为表格」。
+- **编辑**：双击表格或操作栏「编辑表格」，内联编辑 Markdown 源码（等宽字体）；Esc/失焦都是确定输入。
+  提交时宽度保持用户拖过的值，只在行数/换行变多时向下补高度；拖左右边手柄改宽度时也会按新宽度重算高度。
+  操作栏「复制 Markdown」复制源码。
+- **无效格式**：解析失败仍保留 `text`，渲染层显示「表格格式」提示，不丢内容也不崩。
+- **数据库**：`work_canvas_item.kind` 的 select 必须包含 `table`，老库跑一次 `pnpm setup:pb`；
+  `normalizeItem()` 的白名单和 `CanvasItemKind` 也已包含 table。
 
 ## 粘贴链接：是图片就转存，不是图片就贴成链接卡片（2026-10-14）
 
