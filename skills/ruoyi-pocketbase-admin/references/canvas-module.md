@@ -91,7 +91,7 @@
 ## 文本框自动宽高 + Ctrl+C / Ctrl+V 段落（2026-10-19）
 
 - **选中文字或流程节点按 `Ctrl+C` 复制的是文字本身**（多选按空行拼接）。键盘处理里只有「没有图片选中」时才走
-  `copySelectedText()`；图片优先的规则不变（同时选中图片和文字时仍复制图片）。在文字编辑框里（textarea 聚焦）
+  `copySelectedText()`；图片优先的规则不变（同时选中图片和文字时仍复制图片）。在文字编辑框里（contenteditable 聚焦）
   不拦截，浏览器原生复制照常可用。
 - **`Ctrl+V` 粘贴普通文字 = 直接在鼠标处新建一个段落**。顺序仍是「图片文件 → http 地址 → 普通文字」：
   图片照旧转存 OSS，地址不是图片就贴链接卡片，其余纯文本走 `store.addText(pointerWorld, text)`。
@@ -99,19 +99,15 @@
   `fitTextBox()` 先用隐藏探针量「这段文字不换行有多宽」，宽度取 `min(280, 自然宽度)`；超过 280 才开始折行。
   这里的 280 是默认字号 20px 下的值，角手柄把字号放大时会按 `字号/20` 同比放大上限（不然编辑一次就会被压窄）。
   高度由 `textBoxHeight()` 按当前宽度量出来，始终贴合文字（不再是固定的 72，也不保留手动拉高的空白）。
-- **编辑时实时量尺寸，但不每帧写库**：`editBox` 只驱动 textarea 的预览宽高，提交时把最终的 `w/h/text` 一起
-  `applyPatches()`；Esc 取消只丢弃 `editBox`，不会留下中间尺寸。空文字仍然软删除。
-- **编辑框必须 `font-family: inherit`（2026-10-19 修「输入时异常换行」）**：textarea 的浏览器默认字体是
-  `monospace`，而度量探针和 `.canvas-item__text` 用的是页面字体（`-apple-system / Segoe UI / Microsoft YaHei`）。
-  同一段文字在 textarea 里更宽，按探针量出的宽度就会折行，输入拉丁字母或拼音候选时尤其明显
-  （实测输入 `lang'hua` 时 textarea `scrollHeight` 变成 66、视觉上换到第二行；改成 inherit 后
-  `scrollHeight === clientHeight`，候选词与中文同行）。
-- **输入法组合期间要显式量候选串**：有些浏览器在拼音候选还没上屏时只发 `compositionupdate`、不发可用的
-  `input`，只监听 input 会让框停在上一版宽度，候选词就被挤到第二行。现在 textarea 同时监听
-  `compositionstart` / `compositionupdate` / `compositionend`：`onEditorComposition()` 用 `event.data`
-  补进当前 value 再量尺寸，并用 `editorCompositionBase` 判断 value 是否还没被输入法更新，避免把新旧候选串叠加。
-  实测 `y → yin → yinw → yinwei` 每一步框宽都增加、`scrollHeight === clientHeight`，没有折行。
-- **编辑文字不改视口**：双击新建/编辑都在当前 zoom 下原地进行，textarea 跟着世界层缩放；
+- **编辑框是 `contenteditable` div，不再用 textarea（2026-10-19 最终方案）**：
+  `width: max-content`、`max-width: textMaxWidth(fontSize) + 14`（左右 padding + 边框）、`min-height` 一行；
+  浏览器自己排版，输入法候选串天然参与宽高计算，**不再依赖 input / composition 事件时序**，也不会被固定在
+  上一版宽度上。提交时读 `innerText`，把 `w/h/text` 一起 `applyPatches()`；Esc 直接丢弃编辑内容。
+  `wrap_fixed=true` 的文本编辑时用 `width: item.w + 16` 固定折行宽度，高度仍自适应。
+  粘贴走纯文本（`@paste.prevent` 后插入文本节点），不把网页样式带进画布。
+- **`font-family: inherit` 必须保留**：历史坑是 textarea 默认 `monospace`，和度量探针/文字元素字体不一致，
+  同一段文字在编辑框里更宽，拼音或拉丁字母很容易被挤到下一行。
+- **编辑文字不改视口**：双击新建/编辑都在当前 zoom 下原地进行，编辑框跟着世界层缩放；
   不要再加「临时跳到 100% 并居中」的逻辑——那会让用户正在看的区域突然平移+缩放。
 - **拖左右边手柄 = 固定折行宽度**：拖动时写 `wrap_fixed: true`，宽度固定为用户拖到的值（可以超过 280 或缩回去），
   高度继续按这个宽度重排。之后编辑文字也保持这个折行宽度；`wrap_fixed` 走 `ITEM_FIELDS`，
@@ -120,7 +116,8 @@
   四角仍是「含字号的整体缩放」，框外上下中点的圆点是连线用的连接点，不是高度手柄。
 - **数据结构**：`work_canvas_item.wrap_fixed` 是 bool，老库要跑一次 `pnpm setup:pb` 幂等补字段；
   老记录默认 false，但**不会在加载时批量改几何**（避免悄悄改动用户已有画布），双击编辑一次即按新规则贴合。
-- 刚新建的空文本框仍保留 280×72 作为输入占位，第一次输入后立即收成文字自身的宽高。
+- 新建空文本时编辑框是一个最小宽度的插入符框（`min-width: 24px`、一行高），输入后随文字增长；
+  没有文字时提交仍然软删除。旧版 280×72 空框占位已经去掉。
 
 ## 粘贴链接：是图片就转存，不是图片就贴成链接卡片（2026-10-14）
 
