@@ -189,6 +189,9 @@
 - **编辑文字时要把元素本身藏起来**：`CanvasItemView` 的 `v-show` 条件里除了 `croppingId` 还要带上 `editingId`，
   否则编辑框后面会透出同一段旧文字（一块「影子文字」），而且两边折行宽度差几个像素，看着像重影。
   编辑时顺带把蓝色外框/手柄一起 `v-show="!editingId"` 收掉，画面里只留那个虚线编辑框。
+- **工具栏按钮的 pointerdown 必须 stop（2026-10-19 修）**：`.canvas-stage__toolbar` 要加 `@pointerdown.stop`。
+  否则 stage 会把按钮点击当成空白框选、调用 `setPointerCapture`，Element Plus 按钮的 click 根本不会触发，
+  表现是「文字 / 流程节点」按钮看起来完全没反应。
 - **弹窗打开时画布快捷键要让路，但别用 `.el-overlay` 判断**：布局里常年存在几个**隐藏的** overlay（抽屉、CRUD 弹窗），
   `document.querySelector('.el-overlay')` 恒为真，会把 Ctrl+0 / 空格平移 / 删除全部吞掉（踩过：适应窗口失效）。
   用显式的 `modalOpen` ref：`el-dialog` 的 `@open/@closed` 加 `ElMessageBox` 前后手动置位。
