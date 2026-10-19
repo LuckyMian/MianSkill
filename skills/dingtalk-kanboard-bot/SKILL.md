@@ -70,8 +70,11 @@ entirely: Kanboard events are queued into SQLite by the plugin and sent by
 All panels on the RuoYi personnel / attendance screens use the **same 12px gap**.
 This is a standing user requirement, not a one-off style choice:
 
-- Page container padding: `12px` (`p-3` on the route view; define
-  `--panel-gap: 12px` on the page).
+- Page container: **no extra outer padding**. `AppMain` already supplies the
+  shared 12px content inset; do not add `p-2` / `p-3` on the route view.
+  Define `--panel-gap: 12px` on the page for the gaps inside it.
+- The fixed-header offsets in `AppMain.vue` also carry the 12px gap:
+  `117px` with the tags view and `82px` without it.
 - Tree / content row: `el-row :gutter="12"`.
 - Vertical panel stack (person board → people Gantt → any future panel):
   `content-main { gap: var(--panel-gap, 12px); }`.
