@@ -106,6 +106,11 @@
   同一段文字在 textarea 里更宽，按探针量出的宽度就会折行，输入拉丁字母或拼音候选时尤其明显
   （实测输入 `lang'hua` 时 textarea `scrollHeight` 变成 66、视觉上换到第二行；改成 inherit 后
   `scrollHeight === clientHeight`，候选词与中文同行）。
+- **输入法组合期间要显式量候选串**：有些浏览器在拼音候选还没上屏时只发 `compositionupdate`、不发可用的
+  `input`，只监听 input 会让框停在上一版宽度，候选词就被挤到第二行。现在 textarea 同时监听
+  `compositionstart` / `compositionupdate` / `compositionend`：`onEditorComposition()` 用 `event.data`
+  补进当前 value 再量尺寸，并用 `editorCompositionBase` 判断 value 是否还没被输入法更新，避免把新旧候选串叠加。
+  实测 `y → yin → yinw → yinwei` 每一步框宽都增加、`scrollHeight === clientHeight`，没有折行。
 - **编辑文字不改视口**：双击新建/编辑都在当前 zoom 下原地进行，textarea 跟着世界层缩放；
   不要再加「临时跳到 100% 并居中」的逻辑——那会让用户正在看的区域突然平移+缩放。
 - **拖左右边手柄 = 固定折行宽度**：拖动时写 `wrap_fixed: true`，宽度固定为用户拖到的值（可以超过 280 或缩回去），

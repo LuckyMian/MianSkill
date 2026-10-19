@@ -99,7 +99,8 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
   画图/PS 不行），要位图必须 HTTPS 访问。实现与坑见 [canvas-module.md](references/canvas-module.md) 的「复制图片到系统剪贴板」。
 - **无限画布 2026-10-19 文字段落**：选中文字/流程节点按 `Ctrl+C` 复制段落文字，`Ctrl+V` 粘贴普通文字直接落成新段落；
   文本框默认先贴合文字宽度（上限 280）再换行，高度始终自适应，拖左右边手柄后 `wrap_fixed` 固定折行宽度。
-  同日修两处编辑体验：编辑框 `font-family: inherit`（textarea 默认 monospace 会把拼音/拉丁字母挤到下一行），
+  同日修两处编辑体验：编辑框 `font-family: inherit` + 显式监听 `compositionupdate`（textarea 默认 monospace、
+  以及部分浏览器拼音候选期间不发 input，都会把候选词挤到下一行），
   以及双击编辑不再临时跳 100%/居中（原地编辑，视口不动）。
   详见 [canvas-module.md](references/canvas-module.md) 的「文本框自动宽高 + Ctrl+C / Ctrl+V 段落」。
 - **项目管理（2026-10-14 上线）**：项目总览 `/pm/overview`（项目进度卡 + 模块进度表 + 近 7 天完成 + GitHub 仓库卡）、需求看板 `/pm/board`（6 列看板、桌面原生拖拽改状态、触屏降级为下拉、详情抽屉自动保存、需求转待办、回收站软删除）、项目与模块 `/pm/setup`（schema CRUD）；顶栏全站「+ 想法」（`Alt+I`）+ 工作台「项目进度」卡。**GitHub 数据改走服务端代理钩子 `/api/gh/repo`**（令牌只在 N1 的 `pb_hooks/github.pb.js` 里，浏览器拿不到，所以能显示私有仓库；服务端缓存 5 分钟 + 前端 30 分钟，页脚显示令牌剩余配额）。细节见 [pm-module.md](references/pm-module.md)。
