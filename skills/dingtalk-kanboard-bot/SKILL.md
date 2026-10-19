@@ -65,6 +65,24 @@ entirely: Kanboard events are queued into SQLite by the plugin and sent by
   `DingTalkKanboardPrint` scheduled task. A new queued command must also be added to
   `ALLOWED_COMMANDS` in `print-worker.py` or the worker silently refuses it.
 
+## RuoYi panel spacing (standing UI rule)
+
+All panels on the RuoYi personnel / attendance screens use the **same 12px gap**.
+This is a standing user requirement, not a one-off style choice:
+
+- Page container padding: `12px` (`p-3` on the route view; define
+  `--panel-gap: 12px` on the page).
+- Tree / content row: `el-row :gutter="12"`.
+- Vertical panel stack (person board → people Gantt → any future panel):
+  `content-main { gap: var(--panel-gap, 12px); }`.
+- Panels and filter bars must not add their own `margin-bottom`; the shared gap is
+  the only spacing between them.
+- Do not mix 8px / 16px / 20px panel gaps on these screens. New panels must reuse
+  `--panel-gap` and the existing page-shell layout.
+- Reference implementation: `plus-ui/src/views/project/people/index.vue`,
+  `plus-ui/src/views/project/people/PersonStatusBoard.vue`, and
+  `plus-ui/src/assets/styles/components/_page-shell.scss` (`content-stack`).
+
 ## Workflow
 
 1. Read `references/interaction-logic.md` for current routing, commands, message
