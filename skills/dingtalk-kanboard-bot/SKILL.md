@@ -86,6 +86,44 @@ This is a standing user requirement, not a one-off style choice:
   `plus-ui/src/views/project/people/PersonStatusBoard.vue`, and
   `plus-ui/src/assets/styles/components/_page-shell.scss` (`content-stack`).
 
+## RuoYi project menu permissions (standing rule)
+
+The 项目管理 menu tree must follow this role split:
+
+- `sysadmin` / 管理员 and `project_manager` / 项目经理 see **all** menus under
+  项目管理.
+- `employee` / 员工 see only **项目列表**, **任务列表**, and **归档任务**.
+- 项目详情 (`detail/:id`) is a hidden route (`visible = 1`), not a sidebar item.
+  Employees keep this route plus the query / own-task permissions needed to open
+  a project and update or archive their own tasks.
+
+Identifiers:
+
+| Item | Value |
+| --- | --- |
+| 项目管理 root menu | `2107000000000000001` |
+| 员工 role | `1900000000000000001` (`employee`) |
+| 项目经理 role | `1900000000000000002` (`project_manager`) |
+| 管理员 role | `2104527031220105218` (`sysadmin`) |
+
+- The project subtree currently has 27 nodes: 9 pages including the root, and
+  18 functional permissions.
+- 项目经理 gets the role automatically when the user is in the 项目经理 department
+  or owns a project (`pm_project.owner_user_id`).
+- Do not remove `project:task:edit`, `project:task:remove`, `project:task:query`,
+  `project:column:list`, `project:node:query`, or `project:project:query` from the
+  employee role; the backend still scopes task changes to the employee's own
+  tasks.
+- `PeopleController` / `PmPeopleServiceImpl.canViewStatusBoard()` accepts either
+  the people-menu permission or `project_manager`, so managers can open 人员总览
+  without being the project owner.
+- Idempotent setup and rollback-safe reapplication live in
+  `RuoYi-Vue-Plus/script/sql/sqlserver/ry_pm_v8.sql`.
+- Verify through a real login rather than only reading `sys_role_menu`:
+  `/system/menu/getRouters` should return the three employee items and the full
+  manager tree. `D:\Apache24\setup-packages\ruoyi-menu-login-probe.php` creates
+  temporary probe users and removes them afterwards.
+
 ## People AI analysis (RuoYi)
 
 - Endpoint: `GET /project/people/ai-analysis`; `?refresh=true` bypasses the cache.
