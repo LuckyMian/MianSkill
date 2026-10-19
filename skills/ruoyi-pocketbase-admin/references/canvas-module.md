@@ -4,15 +4,15 @@
 `src/components/CanvasBoard/`（`CanvasSidebar` / `CanvasStage` / `CanvasItemView` / `CanvasToolbar` / `CanvasContextMenu`）+
 `src/stores/canvas.ts`（数据、几何、撤销、自动保存）。路由 `/work/canvas`，菜单名「无限画布」。
 
-一块画布 = 一份布局：能放**图片 / 文字便签 / Markdown 表格 / 链接卡片 / 流程节点 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存；
+一块画布 = 一份布局：能放**图片 / 文字便签 / 链接卡片 / 流程节点 / 分组框**，自由平移缩放、框选、拖动、等比缩放、旋转、裁剪、翻转、对齐吸附、层级调整，带撤销重做与自动保存；
 元素之间可以**连线**（流程图），画布支持**全屏/专注模式**。
 
 ## 数据模型
 
 - `work_canvas`：`title`、`theme`(dark/light)、`viewport`(json `{x,y,zoom}`)、`sort`、`trashed`、`trashed_at`。
-- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/table/link/frame/node/edge) + `oss_key`/`source_url` +
+- `work_canvas_item`：`canvas`(relation) + `kind`(image/text/link/frame/node/edge) + `oss_key`/`source_url` +
   几何（`x`/`y`/`w`/`h`/`rotation`/`z`）+ `crop`(json 归一化) + `flip_h`/`flip_v` + `color`/`text`/`font_size` +
-  `frame_id`（所属分组框 id，空=顶层）+ `wrap_fixed`（文本框宽度是否被用户手动固定）+ `deleted`/`deleted_at` +
+  `frame_id`（所属分组框 id，空=顶层）+ `deleted`/`deleted_at` +
   连线专用 `from_id`/`to_id`（两端元素 id）/`from_anchor`/`to_anchor`/`edge_style`/`arrow`。
 
 三个要点：
@@ -22,8 +22,8 @@
    缩放框时子元素同比例位移 + 缩放（文字项同步改 `font_size`）。拖动结束按「中心点落在哪个框里」重新归属，
    所以拖进/拖出框是自然发生的，不需要额外的挂载操作。不支持框套框。
 
-3. **`kind` 是 select 字段，加类型要扩值**。`link`（链接卡片，2026-10-14）和 `table`（Markdown 表格，2026-10-19）都是后加的；
-   扩值由 `pnpm setup:pb` 幂等完成（`ensureCollection` 对 select 只做并集扩值）——**老库不跑一次脚本，前端发新 `kind` 会被 PB 400 掉**。
+3. **`kind` 是 select 字段，加类型要扩值**。`link`（链接卡片，见下面「粘贴链接」一节）就是 2026-10-14 加的第六种值；
+   扩值由 `pnpm setup:pb` 幂等完成（`ensureCollection` 对 select 只做并集扩值）——**老库不跑一次脚本，前端发 `kind='link'` 会被 PB 400 掉**。
    前端 `normalizeItem()` 里也有一份 kind 白名单，漏了会把新类型静默当成 `image`。
 
 ## 流程图：流程节点 + 连线
@@ -54,100 +54,6 @@
   **粘贴只有键盘 `Ctrl+V` 这条入口**：右键菜单里的「粘贴图片」已于 2026-10-14 删除——它走 `navigator.clipboard.read()`，
   浏览器在没有权限/非用户手势时只回一句「浏览器不允许直接读剪贴板」，还不如直接 `Ctrl+V`（`onPaste` 读 `clipboardData.items`，不需要权限）。
   别把那条菜单项加回来，也不要替它加权限弹窗（`navigator.permissions` 在 Chrome 里对 clipboard-read 静默失败）。
-
-## 复制图片到系统剪贴板（2026-10-17）
-
-**Ctrl+C 和右键「复制图片（Ctrl+C）」是「复制出去」**，`Ctrl+D` / 右键「在画布内复制（Ctrl+D）」才是复制一张新元素。
-两件事共用一个入口很容易被误解，菜单文案已经分开写死，别再把它们合并回「复制（Ctrl+D）」。
-
-- 入口：键盘 `Ctrl+C`（有图片选中时拦截，否则让浏览器照常复制文本）、右键菜单「复制图片」、单张图片选中后上方操作栏「复制图片」。
-- 复制的是**画布上看到的样子**：`crop`、`flip_h/flip_v`、`rotation` 都会烘进 PNG；单张按裁剪区域的**原图分辨率**输出，
-  多选时按世界坐标的相对位置合成为一张透明 PNG（按层级从下到上画，2× 起步、最多 4×，长边封顶 4096）。
-- 实现：`src/utils/clipboardImage.ts` 的 `copyCanvasImagesToClipboard()`；
-  `CanvasStage.copySelectedImages()` 负责取 `store.imageUrl()` 的签名地址、缺地址时先 `refreshSignedUrls()`，再弹提示。
-- **安全上下文走真位图**：HTTPS 或 `localhost` 下用 `navigator.clipboard.write([new ClipboardItem({'image/png': blob})])`，
-  系统剪贴板里是 PNG/Bitmap/DIB，画图、PS、微信等只认位图的应用都能直接粘。
-- **当前常用的 `http://192.168.1.168:8090` 不是安全上下文**：浏览器根本不暴露 `navigator.clipboard`，
-  只能退回 `execCommand('copy')` + 隐藏 `contenteditable` 里的 `<img src="data:image/png;base64,…">`。
-  这条通道写进去的是 **HTML 图片**，文档/聊天窗口/网页编辑器能识别；画图、PS 这类只读 CF_DIB 的应用读不到。
-  这是浏览器的安全限制，不是少写了一段 Clipboard API；UI 提示因此写的是「网页/文档可粘贴」。
-- **要真位图就得用 HTTPS 访问**（或 `localhost`）。如果用户反馈「复制了但粘不进画图/PS」，先确认地址栏是不是 `http://…:8090`，
-  不要在这里反复改 `execCommand` 的写法。
-
-实现细节：
-
-- 图片字节用 `fetch(signedUrl)` 取（OSS 的 CORS 白名单必须包含当前页面 origin：`http://192.168.1.168:8090`、
-  `http://localhost:5173`、`http://luckymian.xyz:18090`）。换域名/端口要同步改 bucket 的 CORS，否则报错文案会带上当前 origin。
-- **fetch 必须带 `cache: 'no-store'`**：同一个签名地址已经用 `<img>` 加载过，浏览器缓存里那条响应没有
-  `Access-Control-Allow-Origin`；普通 `fetch` 会复用缓存并报 `MissingAllowOriginHeader`（实测 `default` 失败、
-  `no-store`/`reload` 直接 200）。这个问题在 PowerShell/curl 里看不出来，只有浏览器里同一 URL 先被 `<img>` 打开过才复现。
-- 用 `createImageBitmap(blob)` 解码，**不要用 `<img>.decode()` 等图**：页面在后台/被遮挡时 `decode()` 可能一直不 resolve
-  （实测会挂住），`createImageBitmap` 不受影响；SVG 等解不了的再退回 `<img>` + object URL。
-- HTTP 兜底的 `execCommand('copy')` 依赖 Chrome 的 transient activation：用户按下 Ctrl+C 后要在约 5 秒内调用，
-  所以先 `fetch` + 画 Canvas + `toBlob` 再同步执行；不要再在中间加「等图片 load/decode」这类长异步。
-- 兜底会临时选中隐藏的 `<img>`，复制完恢复原来的 Selection 与焦点，避免画布的键盘快捷键被抢走。
-- 单张图的输出不受画布 zoom 影响；画布缩放只影响多选合成的相对布局，不影响单张原图分辨率。
-
-## 文本框自动宽高 + Ctrl+C / Ctrl+V 段落（2026-10-19）
-
-- **选中文字或流程节点按 `Ctrl+C` 复制的是文字本身**（多选按空行拼接）。键盘处理里只有「没有图片选中」时才走
-  `copySelectedText()`；图片优先的规则不变（同时选中图片和文字时仍复制图片）。在文字编辑框里（contenteditable 聚焦）
-  不拦截，浏览器原生复制照常可用。
-- **`Ctrl+V` 粘贴普通文字 = 直接在鼠标处新建一个段落**。顺序仍是「图片文件 → http 地址 → 普通文字」：
-  图片照旧转存 OSS，地址不是图片就贴链接卡片，其余纯文本走 `store.addText(pointerWorld, text)`。
-- **文本框默认宽度上限 `TEXT_MAX_WIDTH = 280`**（`utils/textMetrics.ts`）：
-  `fitTextBox()` 先用隐藏探针量「这段文字不换行有多宽」，宽度取 `min(280, 自然宽度)`；超过 280 才开始折行。
-  这里的 280 是默认字号 20px 下的值，角手柄把字号放大时会按 `字号/20` 同比放大上限（不然编辑一次就会被压窄）。
-  高度由 `textBoxHeight()` 按当前宽度量出来，始终贴合文字（不再是固定的 72，也不保留手动拉高的空白）。
-- **编辑框是 `contenteditable` div，不再用 textarea（2026-10-19 最终方案）**：
-  `width: max-content`、`max-width: textMaxWidth(fontSize) + 14`（左右 padding + 边框）、`min-height` 一行；
-  浏览器自己排版，输入法候选串天然参与宽高计算，**不再依赖 input / composition 事件时序**，也不会被固定在
-  上一版宽度上。提交时读 `innerText`，把 `w/h/text` 一起 `applyPatches()`；Esc 与失焦一样都是确定输入。
-  `wrap_fixed=true` 的文本编辑时用 `width: item.w + 16` 固定折行宽度，高度仍自适应。
-  粘贴走纯文本（`@paste.prevent` 后插入文本节点），不把网页样式带进画布。
-- **Esc 是确定输入，不是撤销**：编辑已有文字或新建文字，按 Esc 都保留当前输入并提交；
-  只有内容为空时才软删除（新建后直接 Esc 不会留下「双击输入文字」的空占位）。
-- **`font-family: inherit` 必须保留**：历史坑是 textarea 默认 `monospace`，和度量探针/文字元素字体不一致，
-  同一段文字在编辑框里更宽，拼音或拉丁字母很容易被挤到下一行。
-- **编辑文字不改视口**：双击新建/编辑都在当前 zoom 下原地进行，编辑框跟着世界层缩放；
-  不要再加「临时跳到 100% 并居中」的逻辑——那会让用户正在看的区域突然平移+缩放。
-- **拖左右边手柄 = 固定折行宽度**：拖动时写 `wrap_fixed: true`，宽度固定为用户拖到的值（可以超过 280 或缩回去），
-  高度继续按这个宽度重排。之后编辑文字也保持这个折行宽度；`wrap_fixed` 走 `ITEM_FIELDS`，
-  因此撤销/重做、复制元素、自动保存都会带上它。
-- **文本框不显示上下边手柄**：高度永远自适应，`selectionHandles` 对 `kind='text'` 只保留左右边与四角。
-  四角仍是「含字号的整体缩放」，框外上下中点的圆点是连线用的连接点，不是高度手柄。
-- **数据结构**：`work_canvas_item.wrap_fixed` 是 bool，老库要跑一次 `pnpm setup:pb` 幂等补字段；
-  老记录默认 false，但**不会在加载时批量改几何**（避免悄悄改动用户已有画布），双击编辑一次即按新规则贴合。
-- 新建空文本时编辑框是一个最小宽度的插入符框（`min-width: 24px`、一行高），输入后随文字增长；
-  没有文字时提交仍然软删除。旧版 280×72 空框占位已经去掉。
-
-## WYSIWYG 表格（2026-10-19）
-
-- **数据**：`kind='table'`，`table_data`(json) 存 `{ rows: CanvasTableCell[][], aligns? }`，第一行是表头，
-  单元格是 `{ text, image? }`（image 是 OSS key）。`text` 保留一份 Markdown 镜像，供「复制 MD」、旧数据导入和搜索；
-  老表只有 `text` 时，`normalizeItem()` / `tableDataOf()` 会从 Markdown 推导 `table_data`。
-- **单元格编辑**：双击**单元格**进入该格的 contenteditable，不是编辑整张表的 Markdown；Enter/Esc/失焦都是确定输入，
-  Shift+Enter 换行。**默认单元格不存真实文字**，只显示浅色提示文本（表头 `列 N`、正文 `内容`）；
-  双击默认格是空编辑框，直接输入即可。用户已经输入的内容双击时光标放在末尾，不选中覆盖。
-  指针捕获会把 dblclick 改派到 stage，所以 `onDoubleClick()` 必须用 `elementFromPoint` 找
-  `[data-table-cell]`，再调用 `CanvasItemView` 暴露的 `startCellEdit()`；单击单元格在 `onPointerDown()` 里
-  用 `data-table-row/col` 记录选中格。
-- **默认占位/旧数据**：`DEFAULT_TABLE_DATA` 的单元格 `text` 为空；`CanvasTableCell` 用 `is-placeholder`
-  和 contenteditable 的 `:empty::before` 显示提示。旧版默认表（`列 1/2/3` + `内容`）在 `normalizeItem()` 里
-  用 `isLegacyDefaultTable()` 识别并转成空单元格，避免把旧占位当成用户文字。
-- **行/列与图片**：选中表格后操作栏是 `+行 / +列 / 插图 / 删行 / 删列 / 删图 / 复制 MD`。
-  插图走 OSS `canvas/`，存 key；`refreshSignedUrls()` 已把 `table_data` 里的 image key 一起签名。
-  单元格图片最大 240×180，图片下方可以继续放文字；删图/× 只移除引用。
-  **粘贴图片**：在单元格编辑状态下直接 `Ctrl+V`（`TableCellBody` 的 `@paste` 取 image File 后 emit 给 stage），
-  或表格选中但未编辑时 `Ctrl+V` 贴进当前高亮格；没有选中表格时仍按老逻辑贴成普通画布图片。
-- **自适应**：`CanvasItemView` 用 `ResizeObserver` 监听真实 `<table>` 的自然尺寸并 emit `fit`；
-  stage 用 `setItemFields` 更新 `w/h`（不进撤销栈，撤销内容后自动重算）。表格 `width:max-content`、
-  `table-layout:auto`，单元格 `min-width:80px / max-width:280px`，所以列宽随内容增长到 280 后换行，
-  行高随图片/多行文字增长。表格不显示缩放手柄，避免和 auto-fit 打架。
-- **创建/导入**：工具栏「表格」、空白右键「新建表格」、粘贴 Markdown 表格、或在文字框里输入完整表格后提交
-  （自动转成 `table_data`）都能创建。`table_data` 是新增 json 字段，老库要跑 `pnpm setup:pb`。
-- **OSS 回收**：`itemImageKeys()` 把元素 `oss_key` 和单元格 `image` 一起算进去；彻底删画布/元素时会查
-  `table_data` 引用，避免漏回收。
 
 ## 粘贴链接：是图片就转存，不是图片就贴成链接卡片（2026-10-14）
 
@@ -204,11 +110,11 @@
 | 旋转 | **Ctrl + 拖角手柄**（吸附 15°，Shift 自由）；`R` 键 90° |
 | 翻转 | `H` 水平、`J` 垂直（**别用 Ctrl+H/Ctrl+V**：前者是浏览器历史、后者是粘贴） |
 | 层级 | Ctrl+] 上移、Ctrl+[ 下移、右键置顶/置底 |
-| 复制 / 删除 | **Ctrl+C：选中图片=复制图片，选中文字/流程节点=复制段落文字**；Ctrl+D 在画布内复制（偏移 20px）；Delete/Backspace 软删除 |
+| 复制 / 删除 | Ctrl+D 复制（偏移 20px）、Delete/Backspace 软删除 |
 | 裁剪 | 右键「裁剪…」进入，拖 8 个手柄，Enter 或点空白确认、Esc 取消 |
-| 文字 | 双击文字项＝编辑那段文字；**原地编辑、不改视口**（2026-10-19 移除了旧版「缩放≠1 时临时跳到 100% 并居中」，用户反馈视角突然变动）；编辑框里的双击交给浏览器选词 |
+| 文字 | 双击文字项＝编辑那段文字；编辑时若缩放≠1 会先临时切到 100% 便于输入，结束恢复；编辑框里的双击交给浏览器选词 |
 | 双击语义（一套，别再各写各的） | 空白处＝新建文字；文字项＝编辑；图片＝放大到视野（`fitItem`）；链接卡片＝编辑标题+地址；流程节点＝「编辑流程节点」改名；分组框标题栏＝「重命名分组」、**框内空白＝和画布空白一样新建文字**（新元素按中心点自动归到这个框） |
-| 选中后的操作栏 | 选中**单个**元素时，在它正上方 26px 浮一条操作栏（屏幕坐标、不随缩放变）：文字/流程节点＝「复制文本」，链接卡片＝「打开 / 复制地址 / 编辑」，图片＝「复制图片」 |
+| 选中后的操作栏 | 选中**单个**元素时，在它正上方 26px 浮一条操作栏（屏幕坐标、不随缩放变）：文字/流程节点＝「复制文本」，链接卡片＝「打开 / 复制地址 / 编辑」 |
 | 连线 | 鼠标悬停元素出现 4 个连接点 → 从连接点拖到另一个元素（或它的连接点）松手；也可选中两个元素后右键「给选中的两个元素连线」 |
 | 连线样式 | 选中连线右键：直线/曲线/折线、箭头（末端/两端/无）、颜色板、「编辑线上文字」 |
 | 链接卡片 | 双击卡片或点右上角 ↗ 打开；右键：打开链接 / 复制地址 / 改地址… |
@@ -219,9 +125,6 @@
 - **编辑文字时要把元素本身藏起来**：`CanvasItemView` 的 `v-show` 条件里除了 `croppingId` 还要带上 `editingId`，
   否则编辑框后面会透出同一段旧文字（一块「影子文字」），而且两边折行宽度差几个像素，看着像重影。
   编辑时顺带把蓝色外框/手柄一起 `v-show="!editingId"` 收掉，画面里只留那个虚线编辑框。
-- **工具栏按钮的 pointerdown 必须 stop（2026-10-19 修）**：`.canvas-stage__toolbar` 要加 `@pointerdown.stop`。
-  否则 stage 会把按钮点击当成空白框选、调用 `setPointerCapture`，Element Plus 按钮的 click 根本不会触发，
-  表现是「文字 / 流程节点」按钮看起来完全没反应。
 - **弹窗打开时画布快捷键要让路，但别用 `.el-overlay` 判断**：布局里常年存在几个**隐藏的** overlay（抽屉、CRUD 弹窗），
   `document.querySelector('.el-overlay')` 恒为真，会把 Ctrl+0 / 空格平移 / 删除全部吞掉（踩过：适应窗口失效）。
   用显式的 `modalOpen` ref：`el-dialog` 的 `@open/@closed` 加 `ElMessageBox` 前后手动置位。
@@ -310,7 +213,6 @@
 
 - 元素上限 2000（`ITEM_LIMIT`，一次 `listAll` 拉完当前画布）；超了界面会提示拆板。
 - 链接卡片只存地址，不抓标题/图标/摘要；也不做「点开前预览」。
-- **HTTP 下 Ctrl+C 复制的是 HTML 图片，不是系统位图**；要粘进画图/PS 必须用 HTTPS 或 localhost。图片字节还依赖 OSS 的 GET CORS 白名单。
 - 单人使用、服务端存储即多设备同步，最后写入者胜，不做并发合并。
 - 不做导出 PNG、演示模式、网格吸附。
 - 画布内不做跨板共享素材库（从笔记复用图片也没做），但复制元素/复制画布会复用同一批 OSS 对象。

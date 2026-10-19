@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-19T16:34:56+08:00",
+    "generatedAt":  "2026-10-19T17:15:07+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -10,13 +10,13 @@
                        "path":  "skills/dingtalk-kanboard-bot",
                        "description":  "Change the two-way DingTalk (钉钉) robot that fronts this machine\u0027s Kanboard instance: StreamBridge.py reply routing and keywords, the DingTalkNotifier PHP plugin commands and services, the SQLite notification queue, user binding, and onboarding. Use when adding or editing bot commands, reply text or formatting, task notifications, or DingTalk API behavior for this deployment.",
                        "source":  null,
-                       "sha256":  "31AF048A30F12A94F23D78ED5C9D16142D5929521D1DA33BC0231DA609E3B413",
+                       "sha256":  "30FB30860BECC8AF3C487E16D0E4C82BD1546250AE39E4249CD756DF4118579E",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\dingtalk-kanboard-bot",
                                               "%USERPROFILE%\\.claude\\skills\\dingtalk-kanboard-bot"
                                           ],
-                       "provenance":  "本地自建（dingtalk-kanboard-bot 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（dingtalk-kanboard-bot 目录创建于 2026-09-11）"
                    },
                    {
                        "name":  "drawio",
@@ -37,32 +37,18 @@
                        "provenance":  "官方技能，来源 https://github.com/jgraph/drawio-mcp 的 plugins/codex/drawio/skills/drawio，固定版本 eebe7de，与本机文件哈希一致，未做修改"
                    },
                    {
-                       "name":  "freecad-plugin-dev",
-                       "type":  "own",
-                       "path":  "skills/freecad-plugin-dev",
-                       "description":  "Develop, test, package, and publish FreeCAD 1.1 Python workbenches in the LuckyMian FreeCad_Plugins repository at F:\\Codex\\Freecad. Use for workbench commands, Qt panels, FreeCAD API integration, addon metadata, development linking, or plugin delivery in this repository; do not use for FreeCAD C++ modules, generic CAD modeling, or unrelated addons.",
-                       "source":  null,
-                       "sha256":  "03F24E2228F42F675AC23FDEE66D1986F464A7D1DDC828661A607FC4AAC51C11",
-                       "files":  15,
-                       "installTargets":  [
-                                              "%USERPROFILE%\\.codex\\skills\\freecad-plugin-dev",
-                                              "%USERPROFILE%\\.claude\\skills\\freecad-plugin-dev"
-                                          ],
-                       "provenance":  "本地自建（freecad-plugin-dev 目录创建于 2026-10-17）"
-                   },
-                   {
                        "name":  "ruoyi-pocketbase-admin",
                        "type":  "own",
                        "path":  "skills/ruoyi-pocketbase-admin",
                        "description":  "Develop, extend, configure, or deploy the 日常工作台 frontend at G:\\文档\\ChatGPT\\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project\u0027s frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates.",
                        "source":  null,
-                       "sha256":  "CD98AEC9F110F155DD64305D3A5481E4B4C68587E22E70BD7994850515372C9D",
+                       "sha256":  "9CC41AC5A5930C2792EDBFC41C35ABC2FE976CD58A840C0995E80C92066BEEA9",
                        "files":  16,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
                                               "%USERPROFILE%\\.claude\\skills\\ruoyi-pocketbase-admin"
                                           ],
-                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-12）"
+                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-15）"
                    },
                    {
                        "name":  "skill-vault",
@@ -70,7 +56,7 @@
                        "path":  "skills/skill-vault",
                        "description":  "Maintain this machine\u0027s skill library and push it to the GitHub backup repo MianSkill — creating, updating, or deleting any skill under ~/.codex/skills, registering official skill sources, regenerating the manifest, and restoring the library on another machine. Use whenever a skill is created, edited, or removed, or when the user asks to back up, sync, push, or move skills; do not use it for git operations on unrelated projects.",
                        "source":  null,
-                       "sha256":  "A5611E5FF9CE0F609D1F92D109CD0C60B068456E72E5C591BA10BCC3BF30074D",
+                       "sha256":  "5A79D2F1BFB2741A503AFD5CE0FF9CA8AEA8DCFEB7FF25B9FF56D5D03324167F",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
@@ -90,7 +76,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\ucs-development",
                                               "%USERPROFILE%\\.claude\\skills\\ucs-development"
                                           ],
-                       "provenance":  "本地自建（ucs-development 目录创建于 2026-09-25）"
+                       "provenance":  "本地自建（ucs-development 目录创建于 2026-10-15）"
                    },
                    {
                        "name":  "wow-addon-dev",
@@ -104,7 +90,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\wow-addon-dev",
                                               "%USERPROFILE%\\.claude\\skills\\wow-addon-dev"
                                           ],
-                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-09-12）"
+                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-10-15）"
                    }
                ]
 }
