@@ -96,6 +96,10 @@ This is a standing user requirement, not a one-off style choice:
   load, task clashes, overdue and idle people, plus short recommendations.
 - The response is structured JSON (`sections[].items[]`); the UI renders short
   bullets. Do not return large paragraphs; keep each item under ~120 chars.
+- Items must start with an emoji and use `**bold**`, `{red:...}`, and
+  `{big:number}` for emphasis. The panel renders these as bold / red / 16px
+  spans. Bump `PROMPT_VERSION` here and the localStorage cache key when changing
+  this markup, otherwise the old plain-text analysis stays cached.
 - `DEEPSEEK_API_KEY` lives only in `D:\RuoYi\run-ruoyi.cmd` (gitignored). Never
   commit it, log it, or paste it into this skill or a repository. `application.yml`
   only contains the `${DEEPSEEK_API_KEY:}` placeholder.
