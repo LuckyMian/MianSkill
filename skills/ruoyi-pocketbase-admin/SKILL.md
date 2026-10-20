@@ -116,7 +116,8 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
   拖动中用屏幕坐标独立画框、结束 60ms 后再恢复蓝点/手柄；等高角缩放和旋转元素不吸栅格，`Alt` 临时关闭。
   详见 [canvas-module.md](references/canvas-module.md) 的「栅格吸附」。
 - **无限画布 2026-10-20 移除框四周圆点**：删掉 4 个连接点圆点（连线改用右键「给选中的两个元素连线」）；
-  桌面端缩放手柄改为不可见热区（鼠标移到边/角仍可缩放），触屏保留小点，消除放大缩小时的蓝点抖动。
+  桌面端缩放手柄改为**框外**不可见热区（鼠标移到边/角仍可缩放，文字内部拖动不会误触上下拉伸），
+  触屏保留小点，消除放大缩小时的蓝点抖动和拖动文字时的上下抖动。
 - **项目管理（2026-10-14 上线）**：项目总览 `/pm/overview`（项目进度卡 + 模块进度表 + 近 7 天完成 + GitHub 仓库卡）、需求看板 `/pm/board`（6 列看板、桌面原生拖拽改状态、触屏降级为下拉、详情抽屉自动保存、需求转待办、回收站软删除）、项目与模块 `/pm/setup`（schema CRUD）；顶栏全站「+ 想法」（`Alt+I`）+ 工作台「项目进度」卡。**GitHub 数据改走服务端代理钩子 `/api/gh/repo`**（令牌只在 N1 的 `pb_hooks/github.pb.js` 里，浏览器拿不到，所以能显示私有仓库；服务端缓存 5 分钟 + 前端 30 分钟，页脚显示令牌剩余配额）。细节见 [pm-module.md](references/pm-module.md)。
 - 钩子目录 `/opt/pocketbase/pb_hooks/`（开发机源码副本 `G:\文档\ChatGPT\ruoyi\pocketbase-hooks\`；改完 scp 上去即可，PocketBase 检测到文件变化会自己重启，不用手动 restart）：
   - `oss.pb.js`（2026-10-13 更新，旧版备份在同级 `oss.pb.js.bak-20261013`）：上传目录白名单 `notes/` + `canvas/`，新增 `/api/oss/fetch` 网页图片抓取代理；改动细节与 JSVM 限制见 [oss-images.md](oss-images.md)。**换访问地址（域名/端口/公网 IP）必须同步 bucket 的 CORS 白名单**，否则图片直传会报 `图片添加失败：Failed to fetch`（当前白名单：`http://192.168.1.168:8090`、`http://localhost:5173`、`http://luckymian.xyz:18090`）。

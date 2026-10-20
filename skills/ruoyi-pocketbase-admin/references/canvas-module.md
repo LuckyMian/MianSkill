@@ -250,7 +250,9 @@
   外挪 12px + `.canvas-stage__handle { z-index:3 }` 解决；用户反馈放大缩小时圆点仍抖动，现在**直接删掉 4 个连接点**的
   DOM/CSS 和 `anchorHost`/`anchorDotStyle`，连线改走右键「给选中的两个元素连线」。桌面端缩放手柄也改成
   `opacity:0` 的不可见热区（仍可拖，鼠标移到边/角会变缩放光标）；`@media (pointer: coarse)` 下仍显示小点。
-  **不要再加回 anchorHost/anchorDotStyle。**
+  **热区必须整体位于框外**：8 个 handle 用 `translate(-100%/-50%)` 外移，不能再用居中 margin 压进文字内部；
+  否则拖动文字靠近边缘会命中 n/s/角手柄，被当成上下拉伸（用户报的「拖动文字开始上下抖动」就是 9px 热区
+  在框内、误触拉伸）。**不要再加回 anchorHost/anchorDotStyle。**
 - **文本框的「自动高度」靠一个探针元素量**（`utils/textMetrics.ts` 的 `textBoxHeight()`）：在 body 下挂一个 hidden div，
   `white-space:pre-wrap / overflow-wrap:anywhere / line-height:1.35` 与 `.canvas-item__text` 保持一致，量出来的就是世界坐标下的高度。
   拖左右边手柄时每帧量一次（不吃 Vue 的 nextTick，量的是最终布局）；**判空跳过**（空文字时返回 0，调用方按「不改高度」处理），
