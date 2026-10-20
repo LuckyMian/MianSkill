@@ -113,7 +113,7 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
   详见 [canvas-module.md](references/canvas-module.md) 的「编辑框内拖选文字会误选画布元素」。
 - **无限画布 2026-10-20 加栅格吸附**：工具栏磁铁「吸附」开关（默认开，`localStorage.canvas_grid_snap` 持久化），
   拖动/单轴缩放吸附到 24px 网格；元素对齐「对齐」也有独立开关；栅格只吸左上角，`pointermove` 合并到动画帧，
-  拖动中隐藏蓝点/手柄；等高角缩放和旋转元素不吸栅格，`Alt` 临时关闭。
+  拖动中把描边直接画在元素上、结束 60ms 后再恢复蓝点/手柄；等高角缩放和旋转元素不吸栅格，`Alt` 临时关闭。
   详见 [canvas-module.md](references/canvas-module.md) 的「栅格吸附」。
 - **项目管理（2026-10-14 上线）**：项目总览 `/pm/overview`（项目进度卡 + 模块进度表 + 近 7 天完成 + GitHub 仓库卡）、需求看板 `/pm/board`（6 列看板、桌面原生拖拽改状态、触屏降级为下拉、详情抽屉自动保存、需求转待办、回收站软删除）、项目与模块 `/pm/setup`（schema CRUD）；顶栏全站「+ 想法」（`Alt+I`）+ 工作台「项目进度」卡。**GitHub 数据改走服务端代理钩子 `/api/gh/repo`**（令牌只在 N1 的 `pb_hooks/github.pb.js` 里，浏览器拿不到，所以能显示私有仓库；服务端缓存 5 分钟 + 前端 30 分钟，页脚显示令牌剩余配额）。细节见 [pm-module.md](references/pm-module.md)。
 - 钩子目录 `/opt/pocketbase/pb_hooks/`（开发机源码副本 `G:\文档\ChatGPT\ruoyi\pocketbase-hooks\`；改完 scp 上去即可，PocketBase 检测到文件变化会自己重启，不用手动 restart）：

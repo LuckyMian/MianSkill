@@ -269,8 +269,11 @@
   单轴边手柄（e/w/n/s）和 Shift 自由角手柄会把移动边吸到 24px；等高角缩放保留比例不吸，旋转过的元素不吸。
   `Alt` 同时临时关闭元素对齐和栅格吸附。
 - **拖动平滑（2026-10-20）**：`pointermove` 用 `requestAnimationFrame` 合并，一帧最多处理一次（高回报率鼠标
-  不会在同一帧塞几十次几何更新）；拖动期间隐藏 4 个连接点和缩放手柄，只保留选区外框，
-  避免蓝点/手柄跟着吸附跳动；`onPointerUp` 先 flush 最后一帧再提交撤销快照。
+  不会在同一帧塞几十次几何更新）。真正开始 move/scale/rotate 时 `chromeSuppressed=true`，选中元素由
+  `CanvasItemView` 的 `dragOutline` **直接把 outline 画在元素上**（和文字/图片同一帧），单独的
+  `.canvas-stage__outline`、4 个连接点和缩放手柄全部隐藏。`pointerup` 后等 60ms（`chromeReady`）再恢复
+  overlay，避免终帧布局还没落定时蓝点出现在旧坐标；单击、平移、框选不触发 `chromeSuppressed`，不会闪。
+  `onPointerUp` 先 flush 最后一帧再提交撤销快照。
 - **原生拖拽会掐断指针手势（踩过）**：鼠标从元素移到图片上时，Chrome 会启动 HTML5 图片拖拽，紧接着对进行中的指针手势发出
   **`pointercancel`**（表现：拖到一半就断了，只有第一小步生效）。所以画布根节点上必须有 `@dragstart.prevent`，
   元素与裁剪浮层里的 `<img>` 一律 `draggable="false"`；`.canvas-stage` 上还要 `touch-action: none`。
