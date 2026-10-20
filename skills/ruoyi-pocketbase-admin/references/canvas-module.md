@@ -134,6 +134,11 @@
   双击文字就落进「空白处新建文字」那条分支（看上去像「双击文本反而多出一个空文本框」）。
   正确写法是**按坐标自己找元素**：`document.elementFromPoint(event.clientX, event.clientY)`，
   和 `onPointerUp`（连线落点）、`showMenuAt`（右键菜单）同一套路。**以后凡是靠 `event.target` 判元素的鼠标事件都要这么写。**
+- **编辑框内拖选文字会误选画布元素（2026-10-20 修）**：`pointerdown` 从 contenteditable 冒泡到 stage 后，
+  stage 会把它当成空白拖动、启动框选并 `setPointerCapture`，拖选文字时就把别的元素框进来了。
+  `onPointerDown()` 里对 `target.closest('[data-text-editor]')` 的左键/触摸直接 `return`；
+  同时 `.canvas-stage__world` 设 `user-select:none`，`.canvas-stage__editor`（以及单元格编辑器）设
+  `user-select:text`，拖出编辑框也不会选中画布里的其它文字。
 - **双击的判定顺序**（`onDoubleClick`）：先用 `elementFromPoint` 拿元素，然后依次排除编辑框（`[data-text-editor]`，里面双击是选词）、
   缩放手柄（`[data-handle]`）、裁剪手柄、工具栏与右键菜单（这些位置上的双击不是「画布空白」），再看是不是元素、是哪种 `kind`。
 - **`data-frame-bar` 打在分组框的根节点上**（不是标题栏那条），所以 `closest('[data-frame-bar]')` 对框内任何位置都成立——
