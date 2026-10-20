@@ -264,16 +264,19 @@
 - **对齐吸附**阈值是 `6 / zoom`（屏幕像素恒定），拖动时按选区外框与其它元素的边缘/中线比对；
   `ui.alignSnap`（`localStorage.canvas_align_snap`，默认开）由工具栏「对齐」单独开关，`Alt` 临时关掉。
 - **栅格吸附（2026-10-20）**：`ui.gridSnap`（`localStorage.canvas_grid_snap`，默认开）由工具栏磁铁「吸附」切换。
-  移动时 `snapRectToGrid(box, 24, min(12, 8/zoom))` **只吸左上角**（不再用左/中/右多候选，避免候选来回切换造成抖动）；
+  移动时 `snapRectToGrid(box, 24, min(12, 4/zoom))` **只吸左上角**（不再用左/中/右多候选，避免候选来回切换造成抖动）；
   **元素对齐优先**——某条轴命中其它元素的边/中线（`guidesX/Y` 非空）时不再吸栅格。
   单轴边手柄（e/w/n/s）和 Shift 自由角手柄会把移动边吸到 24px；等高角缩放保留比例不吸，旋转过的元素不吸。
   `Alt` 同时临时关闭元素对齐和栅格吸附。
 - **拖动平滑（2026-10-20）**：`pointermove` 用 `requestAnimationFrame` 合并，一帧最多处理一次（高回报率鼠标
-  不会在同一帧塞几十次几何更新）。真正开始 move/scale/rotate 时 `chromeSuppressed=true`，选中元素由
-  `CanvasItemView` 的 `dragOutline` **直接把 outline 画在元素上**（和文字/图片同一帧），单独的
-  `.canvas-stage__outline`、4 个连接点和缩放手柄全部隐藏。`pointerup` 后等 60ms（`chromeReady`）再恢复
-  overlay，避免终帧布局还没落定时蓝点出现在旧坐标；单击、平移、框选不触发 `chromeSuppressed`，不会闪。
-  `onPointerUp` 先 flush 最后一帧再提交撤销快照。
+  不会在同一帧塞几十次几何更新）。真正开始 move/scale/rotate 时 `chromeSuppressed=true`，选区框由**屏幕坐标**的
+  `.canvas-stage__drag-frame` 绘制（`translate3d` + 恒定 1.5px 边框，不随世界层缩放/像素对齐），
+  和元素同一帧更新；单独的 `.canvas-stage__outline`、4 个连接点和缩放手柄全部隐藏。`pointerup` 后等 60ms
+  （`chromeReady`）再恢复 overlay，避免终帧布局还没落定时蓝点出现在旧坐标；单击、平移、框选不触发
+  `chromeSuppressed`，不会闪。`onPointerUp` 先 flush 最后一帧再提交撤销快照。
+- **逐帧录屏定位（2026-10-20）**：用 CDP screencast 逐帧比对蓝框和文字；关闭「吸附」「对齐」时蓝框与文字
+  每帧同步（dx 恒定，步进稳定）。开启栅格吸附时蓝框随**元素吸附跳格**，不是渲染层滞后——要完全顺滑就关掉
+  吸附，或把栅格磁吸阈值保持得很小（当前 4 屏幕像素）。
 - **原生拖拽会掐断指针手势（踩过）**：鼠标从元素移到图片上时，Chrome 会启动 HTML5 图片拖拽，紧接着对进行中的指针手势发出
   **`pointercancel`**（表现：拖到一半就断了，只有第一小步生效）。所以画布根节点上必须有 `@dragstart.prevent`，
   元素与裁剪浮层里的 `<img>` 一律 `draggable="false"`；`.canvas-stage` 上还要 `touch-action: none`。
