@@ -4,6 +4,10 @@
 快照，提交到私有仓库 `LuckyMian/n1-pocketbase-backup` 的 **`main` 分支**；在任意装了 docker
 的机器上 `git clone --single-branch` 后 `./restore.sh` 一键还原。
 
+2026-10-21 曾切回旧仓库修复一次远端丢失：`MianHelperDocker` 已返回 404，10 月 19 日 cron
+已正常执行并生成本地快照，但推送失败，因此远端看起来停在更早的日期。切回旧仓库后补传了
+`2026-10-19_000002` 和 `2026-10-21_152655`。远端仓库现在正好保留最近 4 份快照。
+
 ## 关键坐标
 
 | 项 | 值 |
@@ -16,7 +20,7 @@
 | 备用远端 | `ssh://git@ssh.github.com/LuckyMian/n1-pocketbase-backup.git` + `-p 443`（见坑 5） |
 | 部署密钥 | `/opt/pb-backup/.ssh/id_ed25519`（Ed25519 / dropbear 格式 / 600），配置项 `SSH_KEY`；GitHub 上标题 `n1-istoreos-pocketbase-backup`（write） |
 | 已废弃仓库 | `LuckyMian/MianHelperDocker`（2026-10-21 确认 GitHub API 404，不再使用） |
-| 开发机源码 | `G:\文档\ChatGPT\ruoyi\backup\`：`backup.sh` / `install.sh` / `apply-schedule.sh` / `restore.sh` / `backup.conf.example` / `README.md` / `tools\gh-init.ps1`、`tools\gh-repo-info.ps1` |
+| 开发机源码 | `G:\文档\ChatGPT\ruoyi\backup\`：`backup.sh` / `install.sh` / `apply-schedule.sh` / `restore.sh` / `repair-n1-repo.ps1` / `backup.conf.example` / `README.md` / `tools\gh-init.ps1`、`tools\gh-repo-info.ps1` |
 
 **仓库用途**：`n1-pocketbase-backup` 专用于 N1 整包备份。备份采用覆盖式提交（每次都只保留最近
 `KEEP_SNAPSHOTS` 份快照），不要把需要长期保存的其它文件放进这个仓库。

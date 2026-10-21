@@ -128,11 +128,14 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
 - 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
 - 候选下一步：待办的提醒与重复任务、拖拽排序、附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。
-- **定时整容器备份（2026-10-14 上线）**：每周一 00:00（= 周日晚上 12 点）停容器约 23–28 秒打
+- **定时整容器备份（2026-10-14 上线，2026-10-21 切回旧仓库）**：每周一 00:00（= 周日晚上 12 点）停容器约 23–28 秒打
   整包快照（31.3MB），force push 到**私有**仓库 `LuckyMian/n1-pocketbase-backup` 的 `main`
   分支，还原用
   `git clone --single-branch … && ./restore.sh`（已在 N1 上实测还原到 8099 端口，
   数据 md5 与线上一致）。认证用路由器上的 Ed25519 部署密钥（`SSH_KEY` 配置项），不落账号令牌；
   `KEEP_SNAPSHOTS=4` + orphan 覆盖式提交把 eMMC 占用稳定在约 170MB。
+  2026-10-21 排查确认：`MianHelperDocker` 已被删除，10 月 19 日 cron 实际执行并成功打包，
+  但两路推送都报 `Repository not found`；切回旧仓库后已补传 `2026-10-19_000002` 与
+  `2026-10-21_152655`。以后排查看 `logs/last-status`，不要只看远端最后提交时间。
   **仓库必须私有**——快照含 OSS 密钥与超管密码哈希。细节、坑与运维命令见
   [backup-github.md](references/backup-github.md)。
