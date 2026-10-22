@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-22T17:25:11+08:00",
+    "generatedAt":  "2026-10-22T17:25:51+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -82,9 +82,9 @@
                        "name":  "skill-vault",
                        "type":  "own",
                        "path":  "skills/skill-vault",
-                       "description":  "Maintain this machine\u0027s skill library and keep it in sync with the GitHub backup repo MianSkill — clone the repo into the current workspace, copy workspace skills into the active agent tool\u0027s skills directory (Codex/WorkBuddy/Claude Code), and run pull/push in the fixed order (pull = git pull then copy out; push = copy in then commit and push). Use whenever a skill is created, edited, removed, backed up, synced, or restored; do not use it for git operations on unrelated projects.",
+                       "description":  "Maintain this machine\u0027s skill library and keep it in sync with the GitHub backup repo MianSkill — clone the repo into the current workspace, copy workspace skills into the active agent tool\u0027s skills directory (Codex/WorkBuddy/Claude Code/DSH), and run pull/push in the fixed order (pull = git pull then copy out; push = copy in then commit and push). Use whenever a skill is created, edited, removed, backed up, synced, or restored; do not use it for git operations on unrelated projects.",
                        "source":  null,
-                       "sha256":  "94D45C4F789FC243D3FF7F5C35FC0FCBE3E0A4E68A0ABB9B39F5036DA40F1845",
+                       "sha256":  "283A2CB00D1E1F713B5B77C1108A6A59E03CDBD66296B7C8C0445AD7B1ED6205",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
