@@ -2,12 +2,12 @@
 
 ## 新建一个技能
 
-1. **建目录**：当前 agent 的技能目录（DSH：`%USERPROFILE%\.dsh\skills\<技能名>\`；WorkBuddy：`%USERPROFILE%\.workbuddy\skills\<技能名>\`；Codex：`%USERPROFILE%\.codex\skills\<技能名>\`），目录名必须与技能名一致（小写字母、数字、连字符，少于 64 字符）。
+1. **建目录**：当前 agent 的技能目录（WorkBuddy：`%USERPROFILE%\.workbuddy\skills\<技能名>\`；Codex：`%USERPROFILE%\.codex\skills\<技能名>\`），目录名必须与技能名一致（小写字母、数字、连字符，少于 64 字符）。
 2. **写 `SKILL.md`**：frontmatter 必填 `name`（= 目录名）与 `description`；正文只写「模型自己想不到、但会改变决策」的东西，不写通用建议。
 3. **按需加资源**：`references/` 放按需读取的细节文档（在 SKILL.md 里用相对链接写明何时读）、`assets/` 放要复制进产出的模板或图片、`scripts/` 放值得固化的确定性脚本。**不要**加 `README.md`、changelog 或重复的速查表。
 4. **可选 UI 元数据**：`agents/openai.yaml`（`display_name` / `short_description` / `default_prompt`，其中 `default_prompt` 必须显式写 `$技能名`）。
 5. **校验**：`py -3 -X utf8 <skill-creator>\scripts\quick_validate.py <技能目录>`（`-X utf8` 不能省，见下）。
-6. **收尾必须推送**：在工作区根目录执行 `powershell -NoProfile -File .\MianSkill\sync.ps1 -SkillsRoot "$env:USERPROFILE\.dsh\skills" -Message "add skill: <名字>"`（技能目录换成你当前工具的那个）。
+6. **收尾必须推送**：`powershell -NoProfile -File F:\WorkBuddy\MianResourcePlanning\MianSkill\sync.ps1 -SkillsRoot "$env:USERPROFILE\.workbuddy\skills" -Message "add skill: <名字>"`。
 
 本机的 `python` 是 Microsoft Store 占位符，用不了；统一用 `py -3`（Python 3.11.2）。
 
