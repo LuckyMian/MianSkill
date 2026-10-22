@@ -1,6 +1,6 @@
 ---
 name: skill-vault
-description: Maintain this machine's skill library and keep it in sync with the GitHub backup repo MianSkill — clone the repo into the current workspace, copy workspace skills into the active agent tool's skills directory (Codex/WorkBuddy/Claude Code), and run pull/push in the fixed order (pull = git pull then copy out; push = copy in then commit and push). Use whenever a skill is created, edited, removed, backed up, synced, or restored; do not use it for git operations on unrelated projects.
+description: Maintain this machine's skill library and keep it in sync with the GitHub backup repo MianSkill — clone the repo into the current workspace, copy workspace skills into the active agent tool's skills directory (Codex/WorkBuddy/Claude Code/DSH), and run pull/push in the fixed order (pull = git pull then copy out; push = copy in then commit and push). Use whenever a skill is created, edited, removed, backed up, synced, or restored; do not use it for git operations on unrelated projects.
 metadata:
   short-description: Skill library sync hub (workspace clone ↔ agent skills dir)
 ---
@@ -20,9 +20,9 @@ cd <当前工作区>
 git -c http.proxy= -c https.proxy= clone https://github.com/LuckyMian/MianSkill.git MianSkill
 ```
 
-- 当前工作区是 `F:\WorkBuddy\MianResourcePlanning`，所以克隆路径是 `F:\WorkBuddy\MianResourcePlanning\MianSkill`。
+- 路径一律相对工作区：克隆路径就是 `<当前工作区>\MianSkill`，下文命令都从**工作区根目录**出发写 `.\MianSkill\...`，不写死任何盘符。
 - 已经存在克隆就不要重复克隆，直接 `git pull`。
-- 历史遗留的 `F:\Codex\Skill\MianSkill` 已作废，不再作为工作副本使用（可保留只读，或确认无本地未推送改动后删除）。
+- 历史遗留的工作区外克隆（旧机器上的 `F:\Codex\Skill\MianSkill`）已作废，不再作为工作副本使用（可保留只读，或确认无本地未推送改动后删除）。
 - 工作区本身可能是另一个 git 仓库，`MianSkill/` 是嵌套仓库，应写进工作区的 `.gitignore`，不要被外层仓库当普通文件收进去。
 
 ### 规则 2：工作区技能复制到「当前 agent 工具的技能目录」
@@ -34,32 +34,36 @@ git -c http.proxy= -c https.proxy= clone https://github.com/LuckyMian/MianSkill.
 | WorkBuddy | `%USERPROFILE%\.workbuddy\skills` |
 | Codex（桌面 / CLI） | `%USERPROFILE%\.codex\skills` |
 | Claude Code | `%USERPROFILE%\.claude\skills` |
+| DSH（DeepSeek Harness） | `%USERPROFILE%\.dsh\skills` |
 
 ```powershell
-robocopy F:\WorkBuddy\MianResourcePlanning\MianSkill\skills "$env:USERPROFILE\.workbuddy\skills" /E /XD .git __pycache__ /XF *.pyc .DS_Store
+cd <当前工作区>
+robocopy .\MianSkill\skills "$env:USERPROFILE\.dsh\skills" /E /XD .git __pycache__ /XF *.pyc .DS_Store
 ```
 
+- 换工具只改目标目录：`.dsh` 换成 `.workbuddy` / `.codex` / `.claude` 即可。
 - 用 `/E` 只增改、不删除；确认仓库里某个技能已彻底废弃、要求严格镜像时才用 `/MIR`。
-- 复制完 agent 若没识别到，执行一次**刷新**：WorkBuddy 在技能设置里把该技能关掉再打开（或开新会话，技能清单在会话启动时加载）；Codex 重开会话。
+- 复制完 agent 若没识别到，执行一次**刷新**：WorkBuddy 在技能设置里把该技能关掉再打开（或开新会话，技能清单在会话启动时加载）；Codex 重开会话；DSH 会自动刷新技能目录，不用重启。
 
 ### 规则 3：拉取与推送的顺序相反
 
 **拉取（GitHub → 仓库 → agent）**：先 `git pull`，再复制到 agent 技能目录，必要时刷新。
 
 ```powershell
-cd F:\WorkBuddy\MianResourcePlanning\MianSkill
+cd .\MianSkill
 git -c http.proxy= -c https.proxy= pull --ff-only
-robocopy .\skills "$env:USERPROFILE\.workbuddy\skills" /E /XD .git __pycache__ /XF *.pyc .DS_Store
+robocopy .\skills "$env:USERPROFILE\.dsh\skills" /E /XD .git __pycache__ /XF *.pyc .DS_Store
 ```
 
 **推送（agent → 仓库 → GitHub）**：反过来的顺序，先把 agent 目录的改动复制回仓库 `skills\`，再生成清单、提交、推送。这一步用仓库里的 `sync.ps1` 一次做完（它内部就是复制 → 重生成 `README.md` / `skills.json` → commit → push）：
 
 ```powershell
-powershell -NoProfile -File F:\WorkBuddy\MianResourcePlanning\MianSkill\sync.ps1 `
-  -SkillsRoot "$env:USERPROFILE\.workbuddy\skills" -Message "<前缀>：<改动摘要>"
+# 在工作区根目录执行（脚本必须从仓库里跑）
+powershell -NoProfile -File .\MianSkill\sync.ps1 `
+  -SkillsRoot "$env:USERPROFILE\.dsh\skills" -Message "<前缀>：<改动摘要>"
 ```
 
-- `-SkillsRoot` **必须显式传**：脚本默认值指向 `.codex\skills`，漏传就会把另一套技能库写回仓库。
+- `-SkillsRoot` **必须显式传**：脚本默认值指向 `.codex\skills`，漏传就会把另一套技能库写回仓库（DSH 传 `$env:USERPROFILE\.dsh\skills`，WorkBuddy 传 `$env:USERPROFILE\.workbuddy\skills`）。
 - 只想先看差异：加 `-DryRun`（不写文件、不提交）。只提交不推送：加 `-NoPush`。
 - 收尾必须核对 `origin/main` 真的到了那个 commit（`git fetch origin` + `git log --oneline -1 origin/main`）；推送失败要如实报告，不要说“已备份”。
 
@@ -70,7 +74,7 @@ GitHub  LuckyMian/MianSkill
    ↑ push (commit)                    ↓ pull
 工作区克隆  <工作区>\MianSkill\skills
    ↑ 复制回（推送前）                  ↓ 复制到（拉取后）
-agent 技能目录  %USERPROFILE%\.workbuddy\skills\<技能名>\
+agent 技能目录  %USERPROFILE%\.<工具>\skills\<技能名>\
 ```
 
 1. 改技能：直接在 **agent 技能目录**里改（那才是运行时生效的位置），改完立刻按规则 3 推送。
@@ -93,7 +97,7 @@ agent 技能目录  %USERPROFILE%\.workbuddy\skills\<技能名>\
 5. 本机全局 git 配置挂着已失效的代理 `127.0.0.1:10809`：手工 git 命令要带 `-c http.proxy= -c https.proxy=`（`sync.ps1` 内部已自带）。GitHub 直连**平时**通，但会间歇被掐：症状是 `fatal: unable to access … OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443`（TCP 端口能连上、TLS 握手被打断），`Test-NetConnection github.com -Port 443` 仍是 True，容易误判成「网络正常」。这时别反复重试，改走能访问 GitHub 的机器的 socks 隧道（N1 侧路由装了 OpenClash，实测可用）：
    ```powershell
    ssh -D 11080 -N root@192.168.1.168        # 另开一个窗口常驻（要输密码）
-   git -C F:\WorkBuddy\MianResourcePlanning\MianSkill -c http.proxy=socks5h://127.0.0.1:11080 `
+   git -C .\MianSkill -c http.proxy=socks5h://127.0.0.1:11080 `
        -c https.proxy=socks5h://127.0.0.1:11080 push origin main
    ```
    推完记得 `git fetch origin` 核对 `origin/main` 真的到了那个 commit。

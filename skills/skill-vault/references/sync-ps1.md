@@ -1,12 +1,12 @@
 # sync.ps1 使用与排查
 
-脚本位置：`F:\WorkBuddy\MianResourcePlanning\MianSkill\sync.ps1`（仓库 `LuckyMian/MianSkill` 克隆在当前工作区，分支 `main`）。它必须从仓库里运行：用 `-File <绝对路径>` 调用，或先 `cd` 到仓库根目录。
+脚本位置：`<当前工作区>\MianSkill\sync.ps1`（仓库 `LuckyMian/MianSkill` 克隆在当前工作区，分支 `main`）。它必须从仓库里运行：在工作区根目录用 `-File .\MianSkill\sync.ps1` 调用，或先 `cd` 到仓库根目录。
 
 ## 参数
 
 | 参数 | 作用 |
 | --- | --- |
-| `-SkillsRoot <路径>` | 本机技能目录，默认 `%USERPROFILE%\.codex\skills`（脚本原有默认值）；**WorkBuddy 必须显式传 `$env:USERPROFILE\.workbuddy\skills`** |
+| `-SkillsRoot <路径>` | 本机技能目录，默认 `%USERPROFILE%\.codex\skills`（脚本原有默认值）；**必须显式传当前工具的技能目录**：DSH `$env:USERPROFILE\.dsh\skills`、WorkBuddy `$env:USERPROFILE\.workbuddy\skills`、Claude Code `$env:USERPROFILE\.claude\skills` |
 | `-DryRun` | 只报告会发生什么：robocopy 用 `/L` 预演，不写 `README.md` / `skills.json`，不做任何 git 操作 |
 | `-NoPush` | 只提交到本地，不推送 |
 | `-Message "<文本>"` | 自定义提交信息；缺省为 `sync skills: <日期> [<n> 个技能变更]` |
