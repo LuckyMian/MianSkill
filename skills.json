@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-22T16:59:02+08:00",
+    "generatedAt":  "2026-10-22T17:03:59+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -10,7 +10,7 @@
                        "path":  "skills/dingtalk-kanboard-bot",
                        "description":  "Change the two-way DingTalk (钉钉) robot that fronts this machine\u0027s Kanboard instance: StreamBridge.py reply routing and keywords, the DingTalkNotifier PHP plugin commands and services, the SQLite notification queue, user binding, and onboarding. Use when adding or editing bot commands, reply text or formatting, task notifications, or DingTalk API behavior for this deployment.",
                        "source":  null,
-                       "sha256":  "C684F1A1EA6C51B44D801982C39BABEFE4E05DE830FD79A94047821326F53FA5",
+                       "sha256":  "F8C2E30B2527DADC5C2F59E452004B6A5F7B6B6479ADBBA3024E863F6A4263A7",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\dingtalk-kanboard-bot",
@@ -20,7 +20,7 @@
                    },
                    {
                        "name":  "drawio",
-                       "type":  "official-modified",
+                       "type":  "official",
                        "path":  "skills/drawio",
                        "description":  "Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF.",
                        "source":  {
@@ -28,13 +28,13 @@
                                       "path":  "plugins/codex/drawio/skills/drawio",
                                       "ref":  "eebe7def96409a15511a51fda958f4a620c2300a"
                                   },
-                       "sha256":  "023BB0CE26E61EF328E61F9FDB0447E355AA30EB61CC7EA428A28E9E1C03E266",
+                       "sha256":  "01530F9CEE1CEDB9E4EE932E39896A6B25164F942192A9407BD10CEBAC956A57",
                        "files":  1,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\drawio",
                                               "%USERPROFILE%\\.claude\\skills\\drawio"
                                           ],
-                       "provenance":  "克隆自 https://github.com/jgraph/drawio-mcp（eebe7de）后独立修改"
+                       "provenance":  "官方技能，来源 https://github.com/jgraph/drawio-mcp 的 plugins/codex/drawio/skills/drawio，固定版本 eebe7de，与本机文件哈希一致，未做修改"
                    },
                    {
                        "name":  "freecad-plugin-dev",
@@ -42,7 +42,7 @@
                        "path":  "skills/freecad-plugin-dev",
                        "description":  "Develop, test, package, and publish FreeCAD 1.1 Python workbenches in the LuckyMian FreeCad_Plugins repository at F:\\Codex\\Freecad. Use for workbench commands, Qt panels, FreeCAD API integration, addon metadata, development linking, or plugin delivery in this repository; do not use for FreeCAD C++ modules, generic CAD modeling, or unrelated addons.",
                        "source":  null,
-                       "sha256":  "BB1A0F5D4806F2FC896B29830E790766C9CD6638A46690C8F5A04DB0D0CEB950",
+                       "sha256":  "E521180F5D696D12DEB3F9104B132333456335F45E496C561D84FC2C3CFD6F8C",
                        "files":  15,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\freecad-plugin-dev",
@@ -70,7 +70,7 @@
                        "path":  "skills/ruoyi-pocketbase-admin",
                        "description":  "Develop, extend, configure, or deploy the 日常工作台 frontend at G:\\文档\\ChatGPT\\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project\u0027s frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates.",
                        "source":  null,
-                       "sha256":  "BCF90435E400BDC48DD62104CA3BB90C39818932AEECBFF1A0EEE818BF2D3AF0",
+                       "sha256":  "8360C4F4B818AAC98AE566708345C796A80B7C56E5E23422A0AB0B5BB1D423EA",
                        "files":  16,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
@@ -84,7 +84,7 @@
                        "path":  "skills/skill-vault",
                        "description":  "Maintain this machine\u0027s skill library and keep it in sync with the GitHub backup repo MianSkill — clone the repo into the current workspace, copy workspace skills into the active agent tool\u0027s skills directory (Codex/WorkBuddy/Claude Code/DSH), and run pull/push in the fixed order (pull = git pull then copy out; push = copy in then commit and push). Use whenever a skill is created, edited, removed, backed up, synced, or restored; do not use it for git operations on unrelated projects.",
                        "source":  null,
-                       "sha256":  "D4FBEC61506380C02D18B91F016F6C2127AA9EFC9074617543A5A6A262AFB5C6",
+                       "sha256":  "8A0CB5B38458C7B7BF7211B7A31A011EB2153B2F2CC8AEA947068F3EE900034F",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
@@ -98,7 +98,7 @@
                        "path":  "skills/ucs-development",
                        "description":  "Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects.",
                        "source":  null,
-                       "sha256":  "07218206757090FDC558D924D33364B612CAA6FC0D707C1B7CC55B5B7AA9FBD4",
+                       "sha256":  "D3EDBBE3ED5AB11EEFC3DAC0094061B4652DF1A0BF857B4E4C909EDCED48E8B7",
                        "files":  6,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ucs-development",
@@ -112,7 +112,7 @@
                        "path":  "skills/wow-addon-dev",
                        "description":  "Develop, migrate, review, and debug World of Warcraft in-game AddOns using Lua, XML, TOC metadata, Blizzard UI code, and the version-matched WoW UI API. Use for Retail or Classic AddOn projects; do not use the Battle.net web API as a substitute for the in-game API.",
                        "source":  null,
-                       "sha256":  "D417841CF0BD9EADD0CE47B309C31106904F64C73FEBA5C78D241711D61C71FE",
+                       "sha256":  "F9F578086C8639B62B681BD37E27762C3BFE20F7040E323CAECDBB2C7662502B",
                        "files":  5,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\wow-addon-dev",

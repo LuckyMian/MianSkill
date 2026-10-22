@@ -64,6 +64,8 @@ $ExcludeFiles = @('*.pyc', '.DS_Store')
 # ---------------------------------------------------------------------------
 # 官方 skill 来源表：名称 -> 官方仓库 / 仓库内路径 / 固定版本 / SKILL.md 哈希
 # 判定规则：本机 SKILL.md 哈希与表中一致 = official；不一致 = official-modified
+# 哈希一律按「行尾归一（CRLF→LF）后」的字节计算，与 checkout 出来的行尾无关；
+# 登记新官方技能时，先把官方文件归一化再取 SHA256，不要直接用原始下载文件的字节哈希。
 # 新增官方技能时在这里追加一条即可。
 # ---------------------------------------------------------------------------
 $OfficialSkills = @(
@@ -109,13 +111,40 @@ function Get-SkillFiles {
     return @($all | Where-Object { -not (Test-ExcludedRelPath -RelativePath (Get-RelativePath -Base $Root -Full $_.FullName)) })
 }
 
+# 行尾归一：把 CRLF（以及孤立 CR）统一成 LF 后再哈希。
+# 仓库 .gitattributes 是 "* text=auto eol=lf"，同一份内容在不同机器 / 不同 checkout 行尾下
+# 原始字节并不相同；按原始字节算哈希会让清单数字随机器跳动，所以这里统一先归一。
+# 无法按 UTF-8 解码的文件（图片等二进制资源）保持原字节，避免解码再编码造成损坏。
+function Get-NormalizedBytes {
+    param([string]$Path)
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    try {
+        $strict = New-Object System.Text.UTF8Encoding($false, $true)
+        $text = $strict.GetString($bytes)
+        if ($text.IndexOf([char]13) -lt 0) { return $bytes }
+        $normalized = $text.Replace("`r`n", "`n").Replace("`r", "`n")
+        return [System.Text.Encoding]::UTF8.GetBytes($normalized)
+    }
+    catch {
+        return $bytes
+    }
+}
+
 function Get-FileHashUpper {
     param([string]$Path)
     if (-not (Test-Path -LiteralPath $Path)) { return '' }
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+    $bytes = Get-NormalizedBytes -Path $Path
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hash = $sha.ComputeHash($bytes)
+        return (($hash | ForEach-Object { $_.ToString('x2') }) -join '').ToUpperInvariant()
+    }
+    finally {
+        $sha.Dispose()
+    }
 }
 
-# 目录内容汇总哈希：按相对路径（小写）排序后，把 "相对路径\n + 文件字节" 依次喂给 SHA256
+# 目录内容汇总哈希：按相对路径（小写）排序后，把 "相对路径\n + 文件字节（行尾已归一）" 依次喂给 SHA256
 function Get-DirectoryHash {
     param([string]$Root)
     $files = Get-SkillFiles -Root $Root | Sort-Object { (Get-RelativePath -Base $Root -Full $_.FullName).ToLowerInvariant() }
@@ -126,7 +155,7 @@ function Get-DirectoryHash {
             $rel = (Get-RelativePath -Base $Root -Full $f.FullName).Replace('\', '/')
             $nameBytes = [System.Text.Encoding]::UTF8.GetBytes($rel + "`n")
             $stream.Write($nameBytes, 0, $nameBytes.Length)
-            $fileBytes = [System.IO.File]::ReadAllBytes($f.FullName)
+            $fileBytes = Get-NormalizedBytes -Path $f.FullName
             $stream.Write($fileBytes, 0, $fileBytes.Length)
         }
         $stream.Position = 0
@@ -451,7 +480,7 @@ $table
 
 判定由 ``sync.ps1`` 自动完成：与脚本内官方来源表的哈希一致即为官方（未修改），不一致即为克隆后独立修改，其余目录一律视为自建。新增自建技能无需改脚本即可被自动纳入。
 
-「版本 · 哈希」列中，官方技能显示 ``SKILL.md`` 的 SHA256，可直接与官方仓库文件核对；自建技能显示目录聚合哈希（同样记录在 ``skills.json`` 的 ``sha256`` 字段）。
+「版本 · 哈希」列中，官方技能显示 ``SKILL.md`` 的 SHA256，可直接与官方仓库文件核对；自建技能显示目录聚合哈希（同样记录在 ``skills.json`` 的 ``sha256`` 字段）。两者都按**行尾归一（CRLF→LF）后**的字节计算，因此同一个文件在不同机器、不同 checkout 行尾下算出同一个值。
 
 ## 同步更新
 

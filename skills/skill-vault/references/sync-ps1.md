@@ -15,7 +15,7 @@
 ## 执行分解
 
 1. **校验**：仓库根必须有 `.git`，`-SkillsRoot` 必须存在，否则直接报错退出。
-2. **扫描与判定**：遍历技能目录（目录名 = 技能名），读 `SKILL.md` 的 frontmatter（`name` / `description`），算目录聚合哈希与 `SKILL.md` 的 SHA256。
+2. **扫描与判定**：遍历技能目录（目录名 = 技能名），读 `SKILL.md` 的 frontmatter（`name` / `description`），算目录聚合哈希与 `SKILL.md` 的 SHA256。两种哈希都按**行尾归一（CRLF→LF）后**的字节计算，因此同一份内容在不同机器、不同 checkout 行尾下结果一致；无法按 UTF-8 解码的二进制文件保持原字节。
 3. **镜像**：`robocopy /MIR` 到 `skills\<名字>\`，排除 `.git`、`__pycache__`、`*.pyc`、`.DS_Store`；退出码 ≥ 8 视为失败。
 4. **生成清单**：按扫描结果整体重写 `README.md` 与 `skills.json`；内容（含语义）没变时不重写，所以重复运行是幂等的。
 5. **提交推送**：`git add -A` → 无差异则报「已是最新」并结束 → 有差异则 commit → `git push origin main`。
@@ -30,7 +30,7 @@
 | `official` 官方（未修改） | 在官方来源表里，且 `SKILL.md` 哈希与表中记录一致 | 来源为官方仓库 + 仓库内路径，显示固定版本号与 `SKILL.md` SHA256 |
 | `official-modified` 克隆后独立修改 | 在官方来源表里，但 `SKILL.md` 哈希不一致 | 来源写「克隆自 X 后独立修改」，基线版本 + 本机哈希 |
 
-官方来源表在脚本顶部（`$OfficialSkills`），每条字段：`Name` / `Repo` / `Path`（仓库内的技能目录）/ `Rev`（固定 commit）/ `File`（默认 `SKILL.md`）/ `Sha256`（该文件哈希，大写）。
+官方来源表在脚本顶部（`$OfficialSkills`），每条字段：`Name` / `Repo` / `Path`（仓库内的技能目录）/ `Rev`（固定 commit）/ `File`（默认 `SKILL.md`）/ `Sha256`（该文件**行尾归一后**的 SHA256，大写）。登记时先把官方文件归一化再取哈希，别直接拿原始下载文件的字节哈希。
 
 新增一条的做法：
 
