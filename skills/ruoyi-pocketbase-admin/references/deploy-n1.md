@@ -46,6 +46,8 @@ N1 目前仍是**密码登录**（没装公钥），任何 `ssh` / `scp` 都要�
 [Environment]::GetEnvironmentVariable('N1_SSH_PASSWORD','User')
 ```
 
+注意：`SetEnvironmentVariable(...,'User')` 只写注册表，**已经运行中的进程看不到**——已开着的终端、WorkBuddy/Codex 进程里 `$env:N1_SSH_PASSWORD` 仍是空的，必须重开进程。PowerShell 用上面带 `'User'` 作用域的写法可以直读注册表，不受影响；Bash 里要用新的 shell 会话。
+
 **非交互执行 ssh/scp**：Bash 工具里没有 tty，`ssh` 不会弹密码提示，会直接 `Permission denied`。要用 `SSH_ASKPASS` 把密码喂进去，且密码从环境变量取、经临时文件转手，避免出现在 `ps` 或命令行历史里：
 
 ```bash
