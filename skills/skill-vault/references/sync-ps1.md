@@ -1,12 +1,12 @@
 # sync.ps1 使用与排查
 
-脚本位置：`F:\Codex\Skill\MianSkill\sync.ps1`（仓库 `LuckyMian/MianSkill`，分支 `main`）。它必须从仓库里运行：用 `-File <绝对路径>` 调用，或先 `cd` 到仓库根目录。
+脚本位置：`F:\WorkBuddy\MianResourcePlanning\MianSkill\sync.ps1`（仓库 `LuckyMian/MianSkill` 克隆在当前工作区，分支 `main`）。它必须从仓库里运行：用 `-File <绝对路径>` 调用，或先 `cd` 到仓库根目录。
 
 ## 参数
 
 | 参数 | 作用 |
 | --- | --- |
-| `-SkillsRoot <路径>` | 本机技能目录，默认 `%USERPROFILE%\.codex\skills`；指向别的目录可备份另一套技能（做实验时很有用） |
+| `-SkillsRoot <路径>` | 本机技能目录，默认 `%USERPROFILE%\.codex\skills`（脚本原有默认值）；**WorkBuddy 必须显式传 `$env:USERPROFILE\.workbuddy\skills`** |
 | `-DryRun` | 只报告会发生什么：robocopy 用 `/L` 预演，不写 `README.md` / `skills.json`，不做任何 git 操作 |
 | `-NoPush` | 只提交到本地，不推送 |
 | `-Message "<文本>"` | 自定义提交信息；缺省为 `sync skills: <日期> [<n> 个技能变更]` |
