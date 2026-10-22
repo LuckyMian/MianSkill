@@ -39,7 +39,7 @@ metadata:
 2. **不在 N1 上构建**。N1 只有约 1.9GB 内存、1.2GB eMMC、无 swap；`pnpm install` 与 `vite build` 一律在开发机做，只把 `dist` 送过去。
 3. **菜单与字典是真数据**。侧边栏、路由、下拉选项、标签颜色都来自 `sys_menu` / `sys_dict`；拉取失败时前端退回 `src/config/fallbackMenu.ts` 的内置菜单。改动前先确认当前生效的是哪一种（导航栏右侧用户菜单里有提示）。
 4. **一份 schema 驱动三处**。加字段只改 `src/config/modules/*.ts`，不要在页面里手写表格列或表单控件。
-5. **凭据不落仓库、不落技能**。PocketBase superuser 密码放 `frontend/.env.local`（已被 gitignore）；SSH 是另一套密码。两者都不要写进技能文件或提交到 git。
+5. **凭据不落仓库、不落技能，一律从本机环境变量读**。PocketBase superuser 密码放 `frontend/.env.local`（已被 gitignore）；SSH 是另一套密码，放**本机用户级环境变量** `N1_SSH_HOST` / `N1_SSH_USER` / `N1_SSH_PASSWORD`。技能里只写「从哪读」，绝不写值；取用时不要 `echo`、不要拼进 `ssh` 的参数、不要写进任何被提交的文件。非交互 ssh/scp 的写法见 [deploy-n1.md](references/deploy-n1.md#ssh-凭据从环境变量读不要硬编码)。
 6. **日期按「本地墙钟、不带时区」存取**（写 `YYYY-MM-DD 00:00:00`），显示日期用 `pbDateOnly()` 取前 10 位，不要用 `pbDateToLocal()`（会把 `…000Z` 当 UTC 换算，日期时间都 +8 小时）。
 7. **破坏性动作先落账再删除**。待办「完成/删除」都先写 `work_task`（`source_id` 做幂等键），成功才删原记录；失败就保留原数据并把原因显示出来。同类：删清单先把待办移到未分类，进「最近删除」的笔记不回收图片。归纳见 [feature-map.md](references/feature-map.md)。
 
@@ -81,7 +81,7 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
 | 管理后台 | `http://192.168.1.168:8090/_/`（自带多语言，含简体中文） |
 | nginx（VPN 面板入口） | N1 上 `apk add nginx` 装的 **nginx-ssl**，监听 **9080**：人用的直连走 Basic Auth（用户名固定 `admin`，密码只存在于 `/etc/nginx/conf.d/vpn.htpasswd`，**与 mihomo secret 不是同一个值**）。**应用内嵌的 iframe 不走 Basic**（Chromium 不给子帧带 Basic 凭证，会反复弹框），改走 `/__panel?token=<TOKEN>` 换 Cookie（token 在 nginx 配置与 `sys_dict.vpn_panel_token` 两处，换要一起换）。反代 `127.0.0.1:9090` 并注入 mihomo secret；配置 `/etc/nginx/conf.d/vpn.conf` + 播种页 `/etc/nginx/seed/index.html`。**内网用 9080、外网用 19080**（电信网关上 19080 → 内网 9080，前端按访问主机名自动选），见 [vpn-tools.md](references/vpn-tools.md) |
 | 包管理器 | N1 是 iStoreOS 25.12.5，用 **`apk`**（`opkg` 不存在） |
-| SSH | `root@192.168.1.168:22`，**密码登录**；路由器是 iStoreOS（dropbear），`scp` 必须加 `-O` |
+| SSH | `root@192.168.1.168:22`，**密码登录**（密码在本机环境变量 `N1_SSH_PASSWORD`，主机/用户为 `N1_SSH_HOST` / `N1_SSH_USER`）；路由器是 iStoreOS（dropbear），`scp` 必须加 `-O` |
 | 资源上限 | 容器内存限制 96MiB（实测占用约 21MiB）；rootfs 1.2GB，可用约 1.1GB |
 | 定时备份 | 每周一 00:00（`/etc/crontabs/root` 里 `# pb-backup` 那行，`0 0 * * 1`）→ `/opt/pb-backup/backup.sh` → 私有仓库 `LuckyMian/n1-pocketbase-backup` 的 `main` 分支；工具在 `/opt/pb-backup/`，源码在 `G:\文档\ChatGPT\ruoyi\backup\` |
 
@@ -129,7 +129,7 @@ N1 上（备份相关，详见 [backup-github.md](references/backup-github.md)�
   - ⚠️ 两个钩子里有阿里云 OSS 的 AK/SK 与 GitHub 令牌，**别提交到公开仓库**；每周的整容器备份会把它们一起带走，所以备份仓库必须私有。
 - 待办与归档是双向的：待办里「完成」或「删除」都会**先写入 `work_task`（「归档任务」）再从待办移除**，所以待办页只留未完成的事，没有「已完成」视图；归档失败时待办会被保留，不会丢数据。反过来，归档页操作列上的**「还回待办」**会把一条归档记录还原成待办（先建待办、成功后再删归档记录），归档页因此不再提供「编辑」（要改就还回待办改完再归档）。
 - **「待办日程」已下线**（用户不再需要）：菜单记录已删除，`work_schedule` 集合与数据保留未动，前端代码也留在 `views/work/schedule` + `config/modules/schedule.ts`——想开回来只需在「系统管理 → 菜单配置」加一条 `path=/work/schedule`、`component=work/schedule/Index` 的记录。
-- 遗留：SSH 仍为密码登录（未装公钥，发布会要求输密码）。
+- 遗留：SSH 仍为密码登录（未装公钥）；凭据放本机环境变量 `N1_SSH_HOST` / `N1_SSH_USER` / `N1_SSH_PASSWORD`，非交互执行写法见 [deploy-n1.md](references/deploy-n1.md#ssh-凭据从环境变量读不要硬编码)。
 - 候选下一步：待办的提醒与重复任务、拖拽排序、附件上传、日历/看板视图、模块级权限、把 `/opt/pocketbase` 迁到外置盘（eMMC 只有 1.2GB）。
 - **定时整容器备份（2026-10-14 上线，2026-10-21 切回旧仓库）**：每周一 00:00（= 周日晚上 12 点）停容器约 23–28 秒打
   整包快照（31.3MB），force push 到**私有**仓库 `LuckyMian/n1-pocketbase-backup` 的 `main`
