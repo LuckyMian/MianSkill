@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-21T15:35:06+08:00",
+    "generatedAt":  "2026-10-22T16:41:19+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -16,11 +16,11 @@
                                               "%USERPROFILE%\\.codex\\skills\\dingtalk-kanboard-bot",
                                               "%USERPROFILE%\\.claude\\skills\\dingtalk-kanboard-bot"
                                           ],
-                       "provenance":  "本地自建（dingtalk-kanboard-bot 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（dingtalk-kanboard-bot 目录创建于 2026-10-22）"
                    },
                    {
                        "name":  "drawio",
-                       "type":  "official",
+                       "type":  "official-modified",
                        "path":  "skills/drawio",
                        "description":  "Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF.",
                        "source":  {
@@ -28,13 +28,13 @@
                                       "path":  "plugins/codex/drawio/skills/drawio",
                                       "ref":  "eebe7def96409a15511a51fda958f4a620c2300a"
                                   },
-                       "sha256":  "01530F9CEE1CEDB9E4EE932E39896A6B25164F942192A9407BD10CEBAC956A57",
+                       "sha256":  "023BB0CE26E61EF328E61F9FDB0447E355AA30EB61CC7EA428A28E9E1C03E266",
                        "files":  1,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\drawio",
                                               "%USERPROFILE%\\.claude\\skills\\drawio"
                                           ],
-                       "provenance":  "官方技能，来源 https://github.com/jgraph/drawio-mcp 的 plugins/codex/drawio/skills/drawio，固定版本 eebe7de，与本机文件哈希一致，未做修改"
+                       "provenance":  "克隆自 https://github.com/jgraph/drawio-mcp（eebe7de）后独立修改"
                    },
                    {
                        "name":  "freecad-plugin-dev",
@@ -42,13 +42,27 @@
                        "path":  "skills/freecad-plugin-dev",
                        "description":  "Develop, test, package, and publish FreeCAD 1.1 Python workbenches in the LuckyMian FreeCad_Plugins repository at F:\\Codex\\Freecad. Use for workbench commands, Qt panels, FreeCAD API integration, addon metadata, development linking, or plugin delivery in this repository; do not use for FreeCAD C++ modules, generic CAD modeling, or unrelated addons.",
                        "source":  null,
-                       "sha256":  "03F24E2228F42F675AC23FDEE66D1986F464A7D1DDC828661A607FC4AAC51C11",
+                       "sha256":  "BB1A0F5D4806F2FC896B29830E790766C9CD6638A46690C8F5A04DB0D0CEB950",
                        "files":  15,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\freecad-plugin-dev",
                                               "%USERPROFILE%\\.claude\\skills\\freecad-plugin-dev"
                                           ],
-                       "provenance":  "本地自建（freecad-plugin-dev 目录创建于 2026-10-17）"
+                       "provenance":  "本地自建（freecad-plugin-dev 目录创建于 2026-10-22）"
+                   },
+                   {
+                       "name":  "gismap-helper",
+                       "type":  "own",
+                       "path":  "skills/gismap-helper",
+                       "description":  "处理并切片已下载的谷歌卫星地图：自动识别大图+坐标文件、GeoTIFF、z/x/y 瓦片目录、MBTiles，按经纬度精确对齐输出 XYZ、TMS、MBTiles 瓦片与离线预览页，并可导出整幅大图或 2x2、3x3、4x4 分幅。当用户要拼接、切片、切瓦片、分幅、裁剪、转格式或校准已下载的谷歌卫星影像/航拍底图，或要生成可离线浏览的瓦片底图时使用；不用于联网抓取或下载瓦片（本技能只处理已下载的数据），也不用于与瓦片产出无关的 GIS 数据加工。",
+                       "source":  null,
+                       "sha256":  "D83EA890B7B577613A15B2743A1EDB16BF164AC81157A3D2F3798428EC543A4B",
+                       "files":  7,
+                       "installTargets":  [
+                                              "%USERPROFILE%\\.codex\\skills\\gismap-helper",
+                                              "%USERPROFILE%\\.claude\\skills\\gismap-helper"
+                                          ],
+                       "provenance":  "本地自建（gismap-helper 目录创建于 2026-10-22）"
                    },
                    {
                        "name":  "ruoyi-pocketbase-admin",
@@ -56,13 +70,13 @@
                        "path":  "skills/ruoyi-pocketbase-admin",
                        "description":  "Develop, extend, configure, or deploy the 日常工作台 frontend at G:\\文档\\ChatGPT\\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project\u0027s frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates.",
                        "source":  null,
-                       "sha256":  "1BC37DE9C2FF61F7F47B577263ED83D898789DEFCFEDE1AE6FE67AF4D361AF27",
+                       "sha256":  "215939A8C43A165BC4520342A3B844FB7BB0FDE7173664F665036FAF703494AC",
                        "files":  16,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
                                               "%USERPROFILE%\\.claude\\skills\\ruoyi-pocketbase-admin"
                                           ],
-                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-12）"
+                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-22）"
                    },
                    {
                        "name":  "skill-vault",
@@ -70,13 +84,13 @@
                        "path":  "skills/skill-vault",
                        "description":  "Maintain this machine\u0027s skill library and push it to the GitHub backup repo MianSkill — creating, updating, or deleting any skill under ~/.codex/skills, registering official skill sources, regenerating the manifest, and restoring the library on another machine. Use whenever a skill is created, edited, or removed, or when the user asks to back up, sync, push, or move skills; do not use it for git operations on unrelated projects.",
                        "source":  null,
-                       "sha256":  "A5611E5FF9CE0F609D1F92D109CD0C60B068456E72E5C591BA10BCC3BF30074D",
+                       "sha256":  "6F9D1BE720D81A9DC6BFD408145C4411141DDB5DAEC8E05DA2831E1DE6E702B8",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
                                               "%USERPROFILE%\\.claude\\skills\\skill-vault"
                                           ],
-                       "provenance":  "本地自建（skill-vault 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（skill-vault 目录创建于 2026-10-22）"
                    },
                    {
                        "name":  "ucs-development",
@@ -84,13 +98,13 @@
                        "path":  "skills/ucs-development",
                        "description":  "Develop, debug, review, or extend the UCS_Core Unreal Engine project, including UltraControlSystem, its subsystem and loading modules, UEWebSocketController, MeshColorExclusion, and the companion Vue web controller. Use for requests about this UCS codebase; do not apply to unrelated Unreal projects.",
                        "source":  null,
-                       "sha256":  "D3EDBBE3ED5AB11EEFC3DAC0094061B4652DF1A0BF857B4E4C909EDCED48E8B7",
+                       "sha256":  "07218206757090FDC558D924D33364B612CAA6FC0D707C1B7CC55B5B7AA9FBD4",
                        "files":  6,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ucs-development",
                                               "%USERPROFILE%\\.claude\\skills\\ucs-development"
                                           ],
-                       "provenance":  "本地自建（ucs-development 目录创建于 2026-09-25）"
+                       "provenance":  "本地自建（ucs-development 目录创建于 2026-10-22）"
                    },
                    {
                        "name":  "wow-addon-dev",
@@ -98,13 +112,13 @@
                        "path":  "skills/wow-addon-dev",
                        "description":  "Develop, migrate, review, and debug World of Warcraft in-game AddOns using Lua, XML, TOC metadata, Blizzard UI code, and the version-matched WoW UI API. Use for Retail or Classic AddOn projects; do not use the Battle.net web API as a substitute for the in-game API.",
                        "source":  null,
-                       "sha256":  "F9F578086C8639B62B681BD37E27762C3BFE20F7040E323CAECDBB2C7662502B",
+                       "sha256":  "D417841CF0BD9EADD0CE47B309C31106904F64C73FEBA5C78D241711D61C71FE",
                        "files":  5,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\wow-addon-dev",
                                               "%USERPROFILE%\\.claude\\skills\\wow-addon-dev"
                                           ],
-                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-09-12）"
+                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-10-22）"
                    }
                ]
 }
