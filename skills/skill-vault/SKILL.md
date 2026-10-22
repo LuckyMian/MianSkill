@@ -59,11 +59,11 @@ robocopy .\skills "$env:USERPROFILE\.dsh\skills" /E /XD .git __pycache__ /XF *.p
 
 ```powershell
 # 在工作区根目录执行（脚本必须从仓库里跑）
-powershell -NoProfile -File .\MianSkill\sync.ps1 `
-  -SkillsRoot "$env:USERPROFILE\.dsh\skills" -Message "<前缀>：<改动摘要>"
+powershell -NoProfile -File .\MianSkill\sync.ps1 -Message "<前缀>：<改动摘要>"
 ```
 
-- `-SkillsRoot` **必须显式传**：脚本默认值指向 `.codex\skills`，漏传就会把另一套技能库写回仓库（DSH 传 `$env:USERPROFILE\.dsh\skills`，WorkBuddy 传 `$env:USERPROFILE\.workbuddy\skills`）。
+- `-SkillsRoot` **可以不传**：脚本按**当前 agent 工具**自动定位——DSH → `%USERPROFILE%\.dsh\skills`、Codex → `.codex\skills`、WorkBuddy → `.workbuddy\skills`、Claude Code → `.claude\skills`。顺序是先看工具自己注入的环境变量（`DSH_HOME` / `DSH_*`、`CODEX_*`、`CLAUDECODE`、`WORKBUDDY_HOME`），再看进程祖先链（`DeepSeek Harness.exe` / `codex` / `workbuddy` / `claude`）；两样都判断不出就**报错退出**，不会默认成某个目录。
+- 只有在「在 A 工具里推 B 工具的技能库」这种跨工具操作时才显式传 `-SkillsRoot`，显式值永远优先。
 - 只想先看差异：加 `-DryRun`（不写文件、不提交）。只提交不推送：加 `-NoPush`。
 - 收尾必须核对 `origin/main` 真的到了那个 commit（`git fetch origin` + `git log --oneline -1 origin/main`）；推送失败要如实报告，不要说“已备份”。
 
