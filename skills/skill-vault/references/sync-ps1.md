@@ -1,12 +1,12 @@
 # sync.ps1 使用与排查
 
-脚本位置：`F:\Codex\Skill\MianSkill\sync.ps1`（仓库 `LuckyMian/MianSkill`，分支 `main`）。它必须从仓库里运行：用 `-File <绝对路径>` 调用，或先 `cd` 到仓库根目录。
+脚本位置：`<当前工作区>\MianSkill\sync.ps1`（仓库 `LuckyMian/MianSkill` 克隆在当前工作区，分支 `main`）。它必须从仓库里运行：在工作区根目录用 `-File .\MianSkill\sync.ps1` 调用，或先 `cd` 到仓库根目录。
 
 ## 参数
 
 | 参数 | 作用 |
 | --- | --- |
-| `-SkillsRoot <路径>` | 本机技能目录，默认 `%USERPROFILE%\.codex\skills`；指向别的目录可备份另一套技能（做实验时很有用） |
+| `-SkillsRoot <路径>` | 本机技能目录。可选：缺省按当前 agent 工具自动识别（DSH `%USERPROFILE%\.dsh\skills`、Codex `.codex\skills`、WorkBuddy `.workbuddy\skills`、Claude Code `.claude\skills`），识别不出直接报错，不会默认某个目录；显式传入时以参数为准 |
 | `-DryRun` | 只报告会发生什么：robocopy 用 `/L` 预演，不写 `README.md` / `skills.json`，不做任何 git 操作 |
 | `-NoPush` | 只提交到本地，不推送 |
 | `-Message "<文本>"` | 自定义提交信息；缺省为 `sync skills: <日期> [<n> 个技能变更]` |
@@ -14,8 +14,8 @@
 
 ## 执行分解
 
-1. **校验**：仓库根必须有 `.git`，`-SkillsRoot` 必须存在，否则直接报错退出。
-2. **扫描与判定**：遍历技能目录（目录名 = 技能名），读 `SKILL.md` 的 frontmatter（`name` / `description`），算目录聚合哈希与 `SKILL.md` 的 SHA256。
+1. **定位**：优先用 `-SkillsRoot`；没传时按当前 agent 工具自动识别（先环境变量标记，再进程祖先链），识别不出直接报错，绝不默认某个目录。随后**校验**：仓库根必须有 `.git`，技能目录必须存在，否则直接报错退出。
+2. **扫描与判定**：遍历技能目录（目录名 = 技能名），读 `SKILL.md` 的 frontmatter（`name` / `description`），算目录聚合哈希与 `SKILL.md` 的 SHA256。两种哈希都按**行尾归一（CRLF→LF）后**的字节计算，因此同一份内容在不同机器、不同 checkout 行尾下结果一致；无法按 UTF-8 解码的二进制文件保持原字节。
 3. **镜像**：`robocopy /MIR` 到 `skills\<名字>\`，排除 `.git`、`__pycache__`、`*.pyc`、`.DS_Store`；退出码 ≥ 8 视为失败。
 4. **生成清单**：按扫描结果整体重写 `README.md` 与 `skills.json`；内容（含语义）没变时不重写，所以重复运行是幂等的。
 5. **提交推送**：`git add -A` → 无差异则报「已是最新」并结束 → 有差异则 commit → `git push origin main`。
@@ -30,7 +30,7 @@
 | `official` 官方（未修改） | 在官方来源表里，且 `SKILL.md` 哈希与表中记录一致 | 来源为官方仓库 + 仓库内路径，显示固定版本号与 `SKILL.md` SHA256 |
 | `official-modified` 克隆后独立修改 | 在官方来源表里，但 `SKILL.md` 哈希不一致 | 来源写「克隆自 X 后独立修改」，基线版本 + 本机哈希 |
 
-官方来源表在脚本顶部（`$OfficialSkills`），每条字段：`Name` / `Repo` / `Path`（仓库内的技能目录）/ `Rev`（固定 commit）/ `File`（默认 `SKILL.md`）/ `Sha256`（该文件哈希，大写）。
+官方来源表在脚本顶部（`$OfficialSkills`），每条字段：`Name` / `Repo` / `Path`（仓库内的技能目录）/ `Rev`（固定 commit）/ `File`（默认 `SKILL.md`）/ `Sha256`（该文件**行尾归一后**的 SHA256，大写）。登记时先把官方文件归一化再取哈希，别直接拿原始下载文件的字节哈希。
 
 新增一条的做法：
 

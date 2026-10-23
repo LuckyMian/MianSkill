@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-23T10:23:53+08:00",
+    "generatedAt":  "2026-10-23T10:25:04+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -42,7 +42,7 @@
                        "path":  "skills/ruoyi-pocketbase-admin",
                        "description":  "Develop, extend, configure, or deploy the 日常工作台 frontend at G:\\文档\\ChatGPT\\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project\u0027s frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates.",
                        "source":  null,
-                       "sha256":  "9CC41AC5A5930C2792EDBFC41C35ABC2FE976CD58A840C0995E80C92066BEEA9",
+                       "sha256":  "2D95A23E562C0C33B7212530381D7BF61FD08A394CA129CF0A4602912D5B8770",
                        "files":  16,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
@@ -54,9 +54,9 @@
                        "name":  "skill-vault",
                        "type":  "own",
                        "path":  "skills/skill-vault",
-                       "description":  "Maintain this machine\u0027s skill library and push it to the GitHub backup repo MianSkill — creating, updating, or deleting any skill under ~/.codex/skills, registering official skill sources, regenerating the manifest, and restoring the library on another machine. Use whenever a skill is created, edited, or removed, or when the user asks to back up, sync, push, or move skills; do not use it for git operations on unrelated projects.",
+                       "description":  "Maintain this machine\u0027s skill library and keep it in sync with the GitHub backup repo MianSkill — clone the repo into the current workspace, copy workspace skills into the active agent tool\u0027s skills directory (Codex/WorkBuddy/Claude Code/DSH), and run pull/push in the fixed order (pull = git pull then copy out; push = copy in then commit and push). Use whenever a skill is created, edited, removed, backed up, synced, or restored; do not use it for git operations on unrelated projects.",
                        "source":  null,
-                       "sha256":  "5A79D2F1BFB2741A503AFD5CE0FF9CA8AEA8DCFEB7FF25B9FF56D5D03324167F",
+                       "sha256":  "283A2CB00D1E1F713B5B77C1108A6A59E03CDBD66296B7C8C0445AD7B1ED6205",
                        "files":  4,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
