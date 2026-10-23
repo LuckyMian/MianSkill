@@ -5,14 +5,20 @@
 
 .DESCRIPTION
   流程：
-    1. 扫描本机 skills 目录（默认 %USERPROFILE%\.codex\skills）
+    1. 定位本机 skills 目录：优先 -SkillsRoot；未传时按当前 agent 工具自动识别
+       （DSH → %USERPROFILE%\.dsh\skills，Codex → .codex\skills，WorkBuddy → .workbuddy\skills，
+        Claude Code → .claude\skills），判断不出直接报错，不再默认 .codex
     2. 判定每个技能类型：自建 / 官方（未修改）/ 克隆后独立修改
     3. robocopy 镜像到仓库 skills\<名称>\
     4. 重新生成 README.md 与 skills.json（内容无变化时不重写，保证幂等）
     5. git add / commit / push（-NoPush 跳过推送）
 
 .PARAMETER SkillsRoot
-  本机 skills 目录，默认 %USERPROFILE%\.codex\skills。
+  本机 skills 目录。可选：不传时按「当前 agent 工具」自动识别——
+  环境变量 DSH_HOME / DSH_* → <DSH_HOME>\skills（默认 %USERPROFILE%\.dsh\skills）；
+  CODEX_HOME / CODEX_* → .codex\skills；CLAUDECODE / CLAUDE_CODE_ENTRYPOINT → .claude\skills；
+  WORKBUDDY_HOME → .workbuddy\skills；都没有就看进程祖先链（dsh / codex / workbuddy / claude）。
+  仍然判断不出就报错退出，绝不猜一个目录去镜像。显式传入时以参数为准。
 
 .PARAMETER DryRun
   只报告将要发生的改动，不写任何文件、不执行 git 提交或推送。
@@ -34,10 +40,13 @@
 
 .EXAMPLE
   .\sync.ps1 -NoPush -Message "add new skill"
+
+.EXAMPLE
+  .\sync.ps1 -SkillsRoot "$env:USERPROFILE\.workbuddy\skills"
 #>
 [CmdletBinding()]
 param(
-    [string]$SkillsRoot = (Join-Path $env:USERPROFILE '.codex\skills'),
+    [string]$SkillsRoot,
     [switch]$DryRun,
     [switch]$NoPush,
     [string]$Message,
@@ -45,6 +54,81 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# ---------------------------------------------------------------------------
+# 本机技能目录：优先 -SkillsRoot；否则按「当前 agent 工具」自动识别
+# 顺序：环境变量标记 → 进程祖先链 → 报错（不猜，避免把另一套技能库写回仓库）
+# ---------------------------------------------------------------------------
+function Get-ProcessAncestry {
+    param([int]$ProcessId = $PID, [int]$MaxDepth = 12)
+    $names = @()
+    $cur = $ProcessId
+    for ($i = 0; $i -lt $MaxDepth; $i++) {
+        $p = Get-CimInstance Win32_Process -Filter "ProcessId=$cur" -ErrorAction SilentlyContinue
+        if (-not $p) { break }
+        $names += [string]$p.Name
+        $parent = [int]$p.ParentProcessId
+        if ($parent -le 0 -or $parent -eq $cur) { break }
+        $cur = $parent
+    }
+    return $names
+}
+
+function Resolve-SkillsRoot {
+    param([string]$Explicit)
+    if ($Explicit) {
+        return [pscustomobject]@{ Path = $Explicit; Tool = '手动指定'; Why = '-SkillsRoot' }
+    }
+
+    $userHome = $env:USERPROFILE
+    $known = [ordered]@{
+        'DSH'         = Join-Path $userHome '.dsh\skills'
+        'Codex'       = Join-Path $userHome '.codex\skills'
+        'WorkBuddy'   = Join-Path $userHome '.workbuddy\skills'
+        'Claude Code' = Join-Path $userHome '.claude\skills'
+    }
+
+    # 1) 环境变量标记（当前工具自己注入的，最可靠）
+    if ($env:DSH_HOME) {
+        return [pscustomobject]@{ Path = (Join-Path $env:DSH_HOME 'skills'); Tool = 'DSH'; Why = '环境变量 DSH_HOME' }
+    }
+    if ($env:DSH_SESSION_ID -or $env:DSH_SHELL -or $env:DSH_PROFILE) {
+        return [pscustomobject]@{ Path = $known['DSH']; Tool = 'DSH'; Why = '环境变量 DSH_*' }
+    }
+    if ($env:CODEX_HOME -or $env:CODEX_SANDBOX) {
+        $p = if ($env:CODEX_HOME) { Join-Path $env:CODEX_HOME 'skills' } else { $known['Codex'] }
+        return [pscustomobject]@{ Path = $p; Tool = 'Codex'; Why = '环境变量 CODEX_*' }
+    }
+    if ($env:CLAUDECODE -or $env:CLAUDE_CODE_ENTRYPOINT) {
+        return [pscustomobject]@{ Path = $known['Claude Code']; Tool = 'Claude Code'; Why = '环境变量 CLAUDE*' }
+    }
+    if ($env:WORKBUDDY_HOME) {
+        return [pscustomobject]@{ Path = (Join-Path $env:WORKBUDDY_HOME 'skills'); Tool = 'WorkBuddy'; Why = '环境变量 WORKBUDDY_HOME' }
+    }
+
+    # 2) 进程祖先链
+    foreach ($name in (Get-ProcessAncestry)) {
+        if ($name -match 'deepseek[ ._-]?harness|^dsh([._-]|$)') {
+            return [pscustomobject]@{ Path = $known['DSH']; Tool = 'DSH'; Why = "进程 $name" }
+        }
+        if ($name -match 'workbuddy') {
+            return [pscustomobject]@{ Path = $known['WorkBuddy']; Tool = 'WorkBuddy'; Why = "进程 $name" }
+        }
+        if ($name -match 'codex') {
+            return [pscustomobject]@{ Path = $known['Codex']; Tool = 'Codex'; Why = "进程 $name" }
+        }
+        if ($name -match 'claude') {
+            return [pscustomobject]@{ Path = $known['Claude Code']; Tool = 'Claude Code'; Why = "进程 $name" }
+        }
+    }
+
+    # 3) 判断不出就报错，绝不默认某个目录
+    $list = ($known.GetEnumerator() | ForEach-Object { "    {0,-12} {1}" -f $_.Key, $_.Value }) -join "`n"
+    throw "无法判断当前 agent 工具，请显式传 -SkillsRoot。已知目录：`n$list"
+}
+
+$SkillsRootInfo = Resolve-SkillsRoot -Explicit $SkillsRoot
+$SkillsRoot     = $SkillsRootInfo.Path
 
 $RepoRoot       = $PSScriptRoot
 $RepoSkillsRoot = Join-Path $RepoRoot 'skills'
@@ -64,6 +148,8 @@ $ExcludeFiles = @('*.pyc', '.DS_Store')
 # ---------------------------------------------------------------------------
 # 官方 skill 来源表：名称 -> 官方仓库 / 仓库内路径 / 固定版本 / SKILL.md 哈希
 # 判定规则：本机 SKILL.md 哈希与表中一致 = official；不一致 = official-modified
+# 哈希一律按「行尾归一（CRLF→LF）后」的字节计算，与 checkout 出来的行尾无关；
+# 登记新官方技能时，先把官方文件归一化再取 SHA256，不要直接用原始下载文件的字节哈希。
 # 新增官方技能时在这里追加一条即可。
 # ---------------------------------------------------------------------------
 $OfficialSkills = @(
@@ -109,13 +195,40 @@ function Get-SkillFiles {
     return @($all | Where-Object { -not (Test-ExcludedRelPath -RelativePath (Get-RelativePath -Base $Root -Full $_.FullName)) })
 }
 
+# 行尾归一：把 CRLF（以及孤立 CR）统一成 LF 后再哈希。
+# 仓库 .gitattributes 是 "* text=auto eol=lf"，同一份内容在不同机器 / 不同 checkout 行尾下
+# 原始字节并不相同；按原始字节算哈希会让清单数字随机器跳动，所以这里统一先归一。
+# 无法按 UTF-8 解码的文件（图片等二进制资源）保持原字节，避免解码再编码造成损坏。
+function Get-NormalizedBytes {
+    param([string]$Path)
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    try {
+        $strict = New-Object System.Text.UTF8Encoding($false, $true)
+        $text = $strict.GetString($bytes)
+        if ($text.IndexOf([char]13) -lt 0) { return $bytes }
+        $normalized = $text.Replace("`r`n", "`n").Replace("`r", "`n")
+        return [System.Text.Encoding]::UTF8.GetBytes($normalized)
+    }
+    catch {
+        return $bytes
+    }
+}
+
 function Get-FileHashUpper {
     param([string]$Path)
     if (-not (Test-Path -LiteralPath $Path)) { return '' }
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+    $bytes = Get-NormalizedBytes -Path $Path
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hash = $sha.ComputeHash($bytes)
+        return (($hash | ForEach-Object { $_.ToString('x2') }) -join '').ToUpperInvariant()
+    }
+    finally {
+        $sha.Dispose()
+    }
 }
 
-# 目录内容汇总哈希：按相对路径（小写）排序后，把 "相对路径\n + 文件字节" 依次喂给 SHA256
+# 目录内容汇总哈希：按相对路径（小写）排序后，把 "相对路径\n + 文件字节（行尾已归一）" 依次喂给 SHA256
 function Get-DirectoryHash {
     param([string]$Root)
     $files = Get-SkillFiles -Root $Root | Sort-Object { (Get-RelativePath -Base $Root -Full $_.FullName).ToLowerInvariant() }
@@ -126,7 +239,7 @@ function Get-DirectoryHash {
             $rel = (Get-RelativePath -Base $Root -Full $f.FullName).Replace('\', '/')
             $nameBytes = [System.Text.Encoding]::UTF8.GetBytes($rel + "`n")
             $stream.Write($nameBytes, 0, $nameBytes.Length)
-            $fileBytes = [System.IO.File]::ReadAllBytes($f.FullName)
+            $fileBytes = Get-NormalizedBytes -Path $f.FullName
             $stream.Write($fileBytes, 0, $fileBytes.Length)
         }
         $stream.Position = 0
@@ -261,6 +374,7 @@ Write-Host ''
 Write-Host "MianSkill 同步" -ForegroundColor Cyan
 Write-Host "  仓库      : $RepoRoot"
 Write-Host "  本机技能  : $SkillsRoot"
+Write-Host "  识别依据  : $($SkillsRootInfo.Tool)（$($SkillsRootInfo.Why)）"
 if ($DryRun) { Write-Host "  运行模式  : DryRun（只报告，不写文件）" -ForegroundColor Yellow }
 Write-Host ''
 
@@ -451,7 +565,7 @@ $table
 
 判定由 ``sync.ps1`` 自动完成：与脚本内官方来源表的哈希一致即为官方（未修改），不一致即为克隆后独立修改，其余目录一律视为自建。新增自建技能无需改脚本即可被自动纳入。
 
-「版本 · 哈希」列中，官方技能显示 ``SKILL.md`` 的 SHA256，可直接与官方仓库文件核对；自建技能显示目录聚合哈希（同样记录在 ``skills.json`` 的 ``sha256`` 字段）。
+「版本 · 哈希」列中，官方技能显示 ``SKILL.md`` 的 SHA256，可直接与官方仓库文件核对；自建技能显示目录聚合哈希（同样记录在 ``skills.json`` 的 ``sha256`` 字段）。两者都按**行尾归一（CRLF→LF）后**的字节计算，因此同一个文件在不同机器、不同 checkout 行尾下算出同一个值。
 
 ## 同步更新
 
@@ -464,6 +578,8 @@ $table
 .\sync.ps1 -Message "说明"  # 自定义提交信息
 .\sync.ps1 -IncludeSystem   # 连 Codex 内置 .system 官方技能一起备份
 ``````
+
+不传 ``-SkillsRoot`` 时，脚本按**当前 agent 工具**自动选目录：DSH → ``%USERPROFILE%\.dsh\skills``、Codex → ``.codex\skills``、WorkBuddy → ``.workbuddy\skills``、Claude Code → ``.claude\skills``（先看环境变量 ``DSH_HOME`` / ``DSH_*``、``CODEX_*``、``CLAUDECODE``、``WORKBUDDY_HOME``，再看进程祖先链）；判断不出会报错退出，**不会**默认成某个目录。显式传 ``-SkillsRoot`` 仍然优先。
 
 **规则：任何对技能的修改都必须同步推送。** 每次改完本机技能后立刻执行 `.\sync.ps1`，不要只留在本地；推送失败要如实报告，不要静默跳过。
 
