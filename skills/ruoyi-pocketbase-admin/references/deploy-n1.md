@@ -22,52 +22,6 @@ Phicomm N1，刷 iStoreOS（OpenWrt 系）。4 核 ARM，内存约 1.9GB、**无
 
 `scripts/deploy.mjs` 只写入不删除，并要求目标路径以 `pb_public` 结尾（否则需显式 `--force`）。
 
-## SSH 凭据：从环境变量读，不要硬编码
-
-N1 目前仍是**密码登录**（没装公钥），任何 `ssh` / `scp` 都要密码。凭据只存在**本机用户级环境变量**里，技能文件、脚本、命令行参数里都不出现：
-
-| 变量 | 含义 |
-| --- | --- |
-| `N1_SSH_HOST` | `192.168.1.168`（内网地址，本身不是秘密） |
-| `N1_SSH_USER` | `root` |
-| `N1_SSH_PASSWORD` | 登录密码，只存在于环境变量 |
-
-**Windows 上设置（一次性）**，写入用户级注册表，新开的终端才生效：
-
-```powershell
-[Environment]::SetEnvironmentVariable('N1_SSH_HOST','192.168.1.168','User')
-[Environment]::SetEnvironmentVariable('N1_SSH_USER','root','User')
-[Environment]::SetEnvironmentVariable('N1_SSH_PASSWORD','<密码>','User')
-```
-
-**读取**：
-
-```powershell
-[Environment]::GetEnvironmentVariable('N1_SSH_PASSWORD','User')
-```
-
-注意：`SetEnvironmentVariable(...,'User')` 只写注册表，**已经运行中的进程看不到**——已开着的终端、WorkBuddy/Codex 进程里 `$env:N1_SSH_PASSWORD` 仍是空的，必须重开进程。PowerShell 用上面带 `'User'` 作用域的写法可以直读注册表，不受影响；Bash 里要用新的 shell 会话。
-
-**非交互执行 ssh/scp**：Bash 工具里没有 tty，`ssh` 不会弹密码提示，会直接 `Permission denied`。要用 `SSH_ASKPASS` 把密码喂进去，且密码从环境变量取、经临时文件转手，避免出现在 `ps` 或命令行历史里：
-
-```bash
-mkdir -p /tmp/n1 && printf '%s' "$N1_SSH_PASSWORD" > /tmp/n1/pass && chmod 600 /tmp/n1/pass
-printf '#!/bin/sh\ncat /tmp/n1/pass\n' > /tmp/n1/ap.sh && chmod 700 /tmp/n1/ap.sh
-export SSH_ASKPASS=/tmp/n1/ap.sh SSH_ASKPASS_REQUIRE=force DISPLAY=:0
-
-scp -O -q file.txt root@192.168.1.168:/tmp/
-ssh root@192.168.1.168 'echo ok'
-
-rm -rf /tmp/n1   # 用完立刻删
-```
-
-四个容易踩的点：
-
-- `SSH_ASKPASS_REQUIRE=force` 是关键。少了它，ssh 在存在 tty 时仍走终端提示，在工具里就会直接失败。
-- `DISPLAY` 必须非空（随便填），否则 askpass 被当成无效环境忽略。
-- 密码文件 0600、askpass 脚本 0700，用完 `rm -rf`；不要 `echo $N1_SSH_PASSWORD`，也不要用 `-o` 把密码塞进 ssh 参数。
-- `scp` 仍要加 `-O`（dropbear 没有 sftp-server）。
-
 ## 两个必须知道的坑
 
 - **`scp` 必须加 `-O`**。iStoreOS 的 SSH 是 dropbear，通常没装 `sftp-server`，OpenSSH 9.x 默认走 SFTP 子系统会失败；`scp -O` 强制用旧 SCP 协议才通。手工传文件时同理。

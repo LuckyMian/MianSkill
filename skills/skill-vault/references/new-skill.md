@@ -2,12 +2,12 @@
 
 ## 新建一个技能
 
-1. **建目录**：当前 agent 的技能目录（DSH：`%USERPROFILE%\.dsh\skills\<技能名>\`；WorkBuddy：`%USERPROFILE%\.workbuddy\skills\<技能名>\`；Codex：`%USERPROFILE%\.codex\skills\<技能名>\`），目录名必须与技能名一致（小写字母、数字、连字符，少于 64 字符）。
+1. **建目录**：`%USERPROFILE%\.codex\skills\<技能名>\`，目录名必须与技能名一致（小写字母、数字、连字符，少于 64 字符）。
 2. **写 `SKILL.md`**：frontmatter 必填 `name`（= 目录名）与 `description`；正文只写「模型自己想不到、但会改变决策」的东西，不写通用建议。
 3. **按需加资源**：`references/` 放按需读取的细节文档（在 SKILL.md 里用相对链接写明何时读）、`assets/` 放要复制进产出的模板或图片、`scripts/` 放值得固化的确定性脚本。**不要**加 `README.md`、changelog 或重复的速查表。
 4. **可选 UI 元数据**：`agents/openai.yaml`（`display_name` / `short_description` / `default_prompt`，其中 `default_prompt` 必须显式写 `$技能名`）。
 5. **校验**：`py -3 -X utf8 <skill-creator>\scripts\quick_validate.py <技能目录>`（`-X utf8` 不能省，见下）。
-6. **收尾必须推送**：在工作区根目录执行 `powershell -NoProfile -File .\MianSkill\sync.ps1 -SkillsRoot "$env:USERPROFILE\.dsh\skills" -Message "add skill: <名字>"`（技能目录换成你当前工具的那个）。
+6. **收尾必须推送**：`powershell -NoProfile -File F:\Codex\Skill\MianSkill\sync.ps1 -Message "add skill: <名字>"`。
 
 本机的 `python` 是 Microsoft Store 占位符，用不了；统一用 `py -3`（Python 3.11.2）。
 
@@ -34,17 +34,10 @@ py -3 -X utf8 C:\Users\Administrator\.codex\skills\.system\skill-creator\scripts
 
 ## 迁移 / 在新电脑上还原
 
-新机器：先把仓库克隆到当前工作区（规则 1），再复制到该机器上 agent 工具的技能目录（规则 2）。
+新机器（Codex 技能目录 `%USERPROFILE%\.codex\skills`）：
 
 ```powershell
-cd <当前工作区>
 git -c http.proxy= -c https.proxy= clone https://github.com/LuckyMian/MianSkill
-robocopy .\MianSkill\skills "$env:USERPROFILE\.workbuddy\skills" /E /XD .git __pycache__ /XF *.pyc .DS_Store
-```
-
-Codex（技能目录 `%USERPROFILE%\.codex\skills`）：
-
-```powershell
 robocopy .\MianSkill\skills "$env:USERPROFILE\.codex\skills" /E /XD .git __pycache__ /XF *.pyc .DS_Store
 ```
 
@@ -54,7 +47,7 @@ robocopy .\MianSkill\skills "$env:USERPROFILE\.codex\skills" /E /XD .git __pycac
 robocopy .\MianSkill\skills "$env:USERPROFILE\.claude\skills" /E /XD .git __pycache__ /XF *.pyc .DS_Store
 ```
 
-还原后要在新机器上继续维护备份，就把仓库留在工作区，直接跑仓库里的 `sync.ps1 -SkillsRoot <该 agent 的技能目录>`；不传 `-SkillsRoot` 时脚本默认对 `.codex\skills` 生效。
+还原后要在新机器上继续维护备份，就把仓库留在本机，直接跑仓库里的 `sync.ps1`（`-SkillsRoot` 默认就是 `%USERPROFILE%\.codex\skills`）。
 
 ## 清单字段（skills.json）
 

@@ -1,12 +1,8 @@
 # 定时整容器备份 → GitHub（N1 上已上线）
 
 2026-10-14 上线。**每周一 00:00（即「周日晚上 12 点」）**，N1 把 `pocketbase` 容器整包打成一个
-快照，提交到私有仓库 `LuckyMian/n1-pocketbase-backup` 的 **`main` 分支**；在任意装了 docker
-的机器上 `git clone --single-branch` 后 `./restore.sh` 一键还原。
-
-2026-10-21 曾切回旧仓库修复一次远端丢失：`MianHelperDocker` 已返回 404，10 月 19 日 cron
-已正常执行并生成本地快照，但推送失败，因此远端看起来停在更早的日期。切回旧仓库后补传了
-`2026-10-19_000002` 和 `2026-10-21_152655`。远端仓库现在正好保留最近 4 份快照。
+快照，提交到私有仓库 `LuckyMian/MianHelperDocker` 的 **`pb-backup` 分支**；在任意装了 docker
+的机器上 `git clone -b pb-backup --single-branch` 后 `./restore.sh` 一键还原。
 
 ## 关键坐标
 
@@ -16,14 +12,14 @@
 | 本地 git 仓库 | `/opt/pb-backup/repo`（工作副本 + `snapshots/`） |
 | 配置 | `/opt/pb-backup/backup.conf` |
 | 日志 / 状态 | `logs/backup.log`、`logs/last-status`（一行 `OK`/`FAILED`）、`logs/cron.log`、`logs/manual.log` |
-| 远端 | `git@github.com:LuckyMian/n1-pocketbase-backup.git` 的 `main` 分支（仓库**必须私有**） |
-| 备用远端 | `ssh://git@ssh.github.com/LuckyMian/n1-pocketbase-backup.git` + `-p 443`（见坑 5） |
-| 部署密钥 | `/opt/pb-backup/.ssh/id_ed25519`（Ed25519 / dropbear 格式 / 600），配置项 `SSH_KEY`；GitHub 上标题 `n1-istoreos-pocketbase-backup`（write） |
-| 已废弃仓库 | `LuckyMian/MianHelperDocker`（2026-10-21 确认 GitHub API 404，不再使用） |
-| 开发机源码 | `G:\文档\ChatGPT\ruoyi\backup\`：`backup.sh` / `install.sh` / `apply-schedule.sh` / `restore.sh` / `repair-n1-repo.ps1` / `backup.conf.example` / `README.md` / `tools\gh-init.ps1`、`tools\gh-repo-info.ps1` |
+| 远端 | `git@github.com:LuckyMian/MianHelperDocker.git` 的 `pb-backup` 分支（仓库**必须私有**） |
+| 备用远端 | `ssh://git@ssh.github.com/LuckyMian/MianHelperDocker.git` + `-p 443`（见坑 5） |
+| 部署密钥 | `/opt/pb-backup/.ssh/id_ed25519_mianhelper`（Ed25519 / dropbear 格式 / 600），配置项 `SSH_KEY`；GitHub 上标题 `n1-mianhelper-pb-backup`（write） |
+| 旧仓库 | `LuckyMian/n1-pocketbase-backup`（私有，`main`）留着切换前的 4 份快照，可删 |
+| 开发机源码 | `G:\文档\ChatGPT\ruoyi\backup\`：`backup.sh` / `install.sh` / `apply-schedule.sh` / `restore.sh` / `backup.conf.example` / `README.md` / `tools\gh-init.ps1`、`tools\gh-repo-info.ps1` |
 
-**仓库用途**：`n1-pocketbase-backup` 专用于 N1 整包备份。备份采用覆盖式提交（每次都只保留最近
-`KEEP_SNAPSHOTS` 份快照），不要把需要长期保存的其它文件放进这个仓库。
+**为什么用单独分支**：备份是覆盖式提交（每次都重写分支内容），落在 `main` 上会把用户自己放在
+仓库里的文件删掉，所以固定推 `pb-backup` 分支，`main` 留给别的用途。
 
 ## 快照内容（`snapshots/<YYYY-MM-DD_HHMMSS>/`）
 
@@ -74,8 +70,8 @@ sh /opt/pb-backup/apply-schedule.sh      # 重写 /etc/crontabs/root 里带 “#
 ## 还原（在其他 docker 上）
 
 ```sh
-git clone --single-branch https://github.com/LuckyMian/n1-pocketbase-backup.git
-cd n1-pocketbase-backup
+git clone -b pb-backup --single-branch https://github.com/LuckyMian/MianHelperDocker.git
+cd MianHelperDocker
 ./restore.sh --list
 ./restore.sh                                              # → /opt/pocketbase，容器 pocketbase，8090
 ./restore.sh --target /srv/pb --port 18090 --name pb-n1    # 换目录/端口/名字
@@ -90,8 +86,8 @@ cd n1-pocketbase-backup
 
 ## 坑清单（都踩过）
 
-1. **仓库必须私有，推之前先查**。备份里含：`pb_data` 全部业务数据与超管密码哈希、`pb_hooks/oss.pb.js` 里 15 处阿里云 OSS 凭据（`LTAI…`）、nginx 的 VPN 面板 token 与 Basic Auth 密码、mihomo secret。公开提交等于把这些钥匙一起交出去。
-2. **同一把公钥不能同时当两个仓库的 deploy key**（GitHub 返回 422 `key already in use`）。当前使用 `/opt/pb-backup/.ssh/id_ed25519`，对应 GitHub 部署密钥 `n1-istoreos-pocketbase-backup`；切换仓库时必须同步检查该仓库的 deploy key。
+1. **仓库必须私有，推之前先查**。备份里含：`pb_data` 全部业务数据与超管密码哈希、`pb_hooks/oss.pb.js` 里 15 处阿里云 OSS 凭据（`LTAI…`）、nginx 的 VPN 面板 token 与 Basic Auth 密码、mihomo secret。`MianHelperDocker` 建的时候是**公开**的，已用 API 改成私有（`tools/gh-init.ps1 -MakePrivate`）。公开提交等于把这些钥匙一起交出去。
+2. **同一把公钥不能同时当两个仓库的 deploy key**（GitHub 返回 422 `key already in use`）。换仓库要么删旧 key，要么新生成一把 —— 已改造成 `SSH_KEY` 配置项，`/opt/pb-backup/.ssh/` 下现在有两把（`id_ed25519` 给旧仓库、`id_ed25519_mianhelper` 给新仓库）。
 3. **端口别用 `NetworkSettings.Ports`**：它把 IPv4/IPv6 各算一条，`-p` 会变成 `8090:8090:8090`（非法）。要用 `HostConfig.PortBindings`，再 `sort -u`。
 4. **`params.env` 的值要加引号**：`CMD=serve --http=0.0.0.0:8090` 被 `source` 时会把 `--http=...` 当命令执行。
 5. **N1 到 GitHub 的 22 端口偶发不通**（走 OpenClash 透明代理），表现是 `ssh: Connection to git@github.com:22 exited: No auth methods could be used.` 但手动重试又成功。所以 `backup.sh` 现在每个地址试两次、再退到 443 入口。注意 **dropbear 的 `GIT_SSH_VARIANT=simple` 不支持 URL 里带端口**（`fatal: ssh variant 'simple' does not support setting port`），端口要用 `ssh -p 443` 传，URL 写成 `ssh://git@ssh.github.com/owner/repo.git`（配置项 `REMOTE_FALLBACK_URL` + `REMOTE_FALLBACK_SSH_PORT`）。
