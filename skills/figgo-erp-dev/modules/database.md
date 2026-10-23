@@ -8,7 +8,7 @@
 | 存储 | 位置 / 入口 | 存什么 | 谁在写 |
 | --- | --- | --- | --- |
 | SQL Server `Finance` | 本机实例，`Service/FinanceDb.php` | 财务单据、明细、发票原件（BLOB）、审计事件、核对会话、报销会话与表单 | Kanboard CLI、Apache PHP、RuoYi（`@DS("finance")`） |
-| SQLite `data\db.sqlite` | 插件目录 | 入站去重、用户绑定、出站队列、每日汇总去重、个人发票台账、历史入职会话 | Kanboard 插件 |
+| SQLite `data\db.sqlite` | Kanboard 数据目录 | 入站去重、用户绑定、出站队列、每日汇总去重、个人发票台账、历史入职会话 | Kanboard 插件 |
 | 磁盘归档 | `data\reimbursement\archive\<YYYY-MM>\<code>\` | 原件、`manifest.json`、填好的 xlsx | `ReimbursementService` |
 
 口径：

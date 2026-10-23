@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-23T10:50:51+08:00",
+    "generatedAt":  "2026-10-23T10:52:14+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -28,7 +28,7 @@
                        "path":  "skills/figgo-erp-dev",
                        "description":  "Develop and maintain the Figgo (飞戈) ERP stack on this machine: the DingTalk robot bridge, the reimbursement and finance workflow across Kanboard PHP, SQL Server Finance and RuoYi, invoice OCR, the RuoYi backend and console UI, the Excel/printing pipeline, and the data stores behind them. Load the matching module under modules/ before changing anything. Kanboard project-management bot features are sealed, not live.",
                        "source":  null,
-                       "sha256":  "A27144F66B98E365B28D99056DF53BE306CEC5D6030E0FC205866158E919B20A",
+                       "sha256":  "2F68CFC2BED4354F850640ABB1D1E9463D469BFEDCF3D0D216AFE2DCC80758D0",
                        "files":  9,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\figgo-erp-dev",

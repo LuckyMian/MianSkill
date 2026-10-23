@@ -27,7 +27,7 @@ metadata:
 | 入站机器人 | `StreamBridge.py` | `D:\Apache24\python\python.exe`，SYSTEM，DingTalk Stream WSS |
 | 业务命令 | `D:\php\php.exe cli dingtalk:*` | 每次调用起一个 PHP 进程 |
 | 财务/报销数据 | 本机 SQL Server 库 `Finance` | `Service\FinanceDb.php` 统一连接 |
-| 队列与绑定 | `plugin\data\db.sqlite` | 插件内 SQLite |
+| 队列与绑定 | `D:\Apache24\htdocs\kanboard\data\db.sqlite` | Kanboard 数据目录下的 SQLite |
 | OCR | `D:\Apache24\invoice-ocr\ocr_worker.py` + `C:\Users\Administrator\Documents\ChatGPT\发票助手` | Python 3.12 worker |
 | 打印 | `print-worker.py` / `PrintService.py` / `ReimbursementPrint.py` | 管理员桌面会话（计划任务） |
 | RuoYi 后端 | `D:\RuoYi\RuoYi-Vue-Plus` | Java，独立 git 仓库 |
