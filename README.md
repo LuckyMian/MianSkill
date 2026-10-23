@@ -2,7 +2,7 @@
 
 自用 skill 备份仓库：把平时在用的 AI 技能集中存放，方便换电脑、给其他 AI 工具直接读取，以及长期留档。
 
-> 本文件由 `sync.ps1` 自动生成，请勿手工编辑。最后更新：2026-10-19
+> 本文件由 `sync.ps1` 自动生成，请勿手工编辑。最后更新：2026-10-23
 > 同一份清单的机器可读版本见 [`skills.json`](skills.json)。
 
 ## 快速开始（给 AI 工具 / 新电脑）
@@ -33,7 +33,7 @@ robocopy .\MianSkill\skills "$env:USERPROFILE\.claude\skills" /E /XD .git __pyca
 
 | 名称 | 类型 | 来源 | 版本 · 哈希 | 用途 |
 |------|------|------|-------------|------|
-| `dingtalk-kanboard-bot` | 自建 | 无（本地自建） | 聚合 SHA256 `13e432736a36` | Change the two-way DingTalk (钉钉) robot that fronts this machine's Kanboard instance: StreamBridge.py reply routing and keywords, the DingTalkNotifier PHP plugin commands and services, the SQLite notification queue, user binding, and onboarding. Use when adding or editing bot commands, reply text or formatting, task notifications, or DingTalk API behavior for this deployment. |
+| `dingtalk-kanboard-bot` | 自建 | 无（本地自建） | 聚合 SHA256 `7130338d8546` | Operate and maintain this machine's DingTalk-to-Kanboard bridge for RuoYi finance: StreamBridge routing, reimbursement and finance PHP services, invoice OCR, SQL Server Finance data, notification queues, web ledger, and desktop printing. Use for this deployment's bot changes or troubleshooting; do not apply it to unrelated Kanboard robots or RuoYi business modules. |
 | `drawio` | 官方（未修改） | [jgraph/drawio-mcp](https://github.com/jgraph/drawio-mcp) `plugins/codex/drawio/skills/drawio` | 固定于 `eebe7de` · SKILL.md SHA256 `5e1d5460fc6a2da7da98ad851841ec174670f42c0b7339835cc709957b9328f7` | Always use when user asks to create, generate, draw, or design a diagram, flowchart, architecture diagram, ER diagram, sequence diagram, class diagram, network diagram, mockup, wireframe, or UI sketch, or mentions draw.io, drawio, drawoi, .drawio files, or diagram export to PNG/SVG/PDF. |
 | `ruoyi-pocketbase-admin` | 自建 | 无（本地自建） | 聚合 SHA256 `9cc41ac5a593` | Develop, extend, configure, or deploy the 日常工作台 frontend at G:\文档\ChatGPT\ruoyi — a RuoYi-style configurable console (menu- and dictionary-driven routing, schema-driven CRUD) built with Vue 3 + Element Plus and hosted by PocketBase inside the Docker container on the Phicomm N1 side-router. Use for this project's frontend, PocketBase collections, runtime configuration, or N1 deployment work; do not use it for RuoYi/yudao Java backends or unrelated admin templates. |
 | `skill-vault` | 自建 | 无（本地自建） | 聚合 SHA256 `5a79d2f1bfb2` | Maintain this machine's skill library and push it to the GitHub backup repo MianSkill — creating, updating, or deleting any skill under ~/.codex/skills, registering official skill sources, regenerating the manifest, and restoring the library on another machine. Use whenever a skill is created, edited, or removed, or when the user asks to back up, sync, push, or move skills; do not use it for git operations on unrelated projects. |

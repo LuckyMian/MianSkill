@@ -1,5 +1,16 @@
 # Current interaction logic
 
+> **Current authority (verified 2026-10-23):** branch `codex/ruoyi-erp-cutover` is
+> live. Finance, reimbursement, invoice OCR, the shared queue, web ledger and
+> RuoYi-facing commands are active; Kanboard project queries, onboarding, task events,
+> daily summaries, scheduler and password commands are disabled by
+> `KANBOARD_PROJECT_FEATURES_ENABLED = False` / `Plugin.php`. Finance data and
+> reimbursement sessions/forms are in SQL Server `Finance`, not `data\finance.sqlite`.
+> The executable command list is `D:\php\php.exe cli list`. For current scope, data
+> ownership and operational checks, read the plugin's canonical `README.md`. Use the
+> older project/onboarding and SQLite sections below as legacy implementation context,
+> not as the current runtime contract.
+
 Scanned 2026-09-11 on this machine: Kanboard 1.2.54 at `D:\Apache24\htdocs\kanboard`,
 Apache on port 801, PHP 8.5.10 at `D:\php`. Everything DingTalk lives in
 `plugins\DingTalkNotifier`.

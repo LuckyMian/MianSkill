@@ -1,8 +1,8 @@
 ---
 name: dingtalk-kanboard-bot
-description: "Change the two-way DingTalk (钉钉) robot that fronts this machine's Kanboard instance: StreamBridge.py reply routing and keywords, the DingTalkNotifier PHP plugin commands and services, the SQLite notification queue, user binding, and onboarding. Use when adding or editing bot commands, reply text or formatting, task notifications, or DingTalk API behavior for this deployment."
+description: "Operate and maintain this machine's DingTalk-to-Kanboard bridge for RuoYi finance: StreamBridge routing, reimbursement and finance PHP services, invoice OCR, SQL Server Finance data, notification queues, web ledger, and desktop printing. Use for this deployment's bot changes or troubleshooting; do not apply it to unrelated Kanboard robots or RuoYi business modules."
 metadata:
-  short-description: Change the DingTalk bot on this Kanboard server
+  short-description: Operate the DingTalk finance and reimbursement bridge
 ---
 
 # DingTalk x Kanboard robot
@@ -11,24 +11,51 @@ This server runs a two-way DingTalk robot in front of Kanboard. Apache serves
 Kanboard from `D:\Apache24` on port 801, PHP is `D:\php\php.exe`, and all DingTalk
 code lives in `D:\Apache24\htdocs\kanboard\plugins\DingTalkNotifier`.
 
-## Three layers
+The canonical current-state overview is
+`D:\Apache24\htdocs\kanboard\plugins\DingTalkNotifier\README.md`. Read it before
+changing this deployment. The branch `codex/ruoyi-erp-cutover` retired Kanboard
+project-management bot features; finance, reimbursement, invoice OCR, the shared
+queue and RuoYi-facing CLI integrations remain active.
+
+## Runtime layers
 
 | Layer | Lives in | Runs as |
 | --- | --- | --- |
 | Inbound bot | `StreamBridge.py` | long-running Python process (`D:\Apache24\python\python.exe`), DingTalk Stream WSS |
-| Intent + rendering | `Console\*.php`, `Service\*Service.php` | `D:\php\php.exe cli dingtalk:*` |
-| State + delivery | `data\db.sqlite`, `QueueService.php`, `DingTalkClient.php` | Kanboard CLI and Apache PHP |
+| Intent + business state | `Console\*.php`, `Service\*Service.php` | `D:\php\php.exe cli dingtalk:*` |
+| Finance state | SQL Server `Finance` via `FinanceDb.php` | Kanboard CLI, Apache PHP and RuoYi |
+| Queue + bindings | `data\db.sqlite`, `QueueService.php`, `DingTalkClient.php` | Kanboard CLI and Apache PHP |
+| OCR | `D:\Apache24\invoice-ocr\ocr_worker.py` + `C:\Users\Administrator\Documents\ChatGPT\发票助手` | Python 3.12 worker |
+| Excel/printing | `print-worker.py`, `PrintService.py`, `ReimbursementPrint.py` | administrator interactive session |
 
 The Python bridge only classifies an incoming message and shells out to Kanboard
 CLI commands that print JSON arrays of finished message strings; it sends one
-DingTalk message per array element. Outbound task notifications bypass Python
-entirely: Kanboard events are queued into SQLite by the plugin and sent by
-`dingtalk:run`.
+DingTalk message per array element. Outbound notifications bypass Python: PHP
+queues them into SQLite and `dingtalk:run` delivers them.
+
+Current active capabilities are reimbursement, invoice OCR/ledger, finance review,
+finance notifications, web ledger, RuoYi "my reimbursement", and attendance/staff
+mapping. Project queries, onboarding, task events, daily summaries, scheduler and
+password commands are retained only as migration reference and are filtered or
+unregistered in the live runtime.
 
 ## Invariants that are easy to break
 
-- Group messages are ignored unless the robot is mentioned. Private chat handles
-  only `#新人入职` and the four job words, not the query commands.
+- **Do not follow the old project-bot flow as if it were live.** The runtime filters
+  project intents with `KANBOARD_PROJECT_FEATURES_ENABLED = False`, and `Plugin.php`
+  has the related commands/listeners commented out. Finance, reimbursement, invoice,
+  `dingtalk:run`, `registration-status`, `staff-map`, and `attendance-status` stay on.
+- **Finance data is in SQL Server, not `data\finance.sqlite`.** `FinanceDb.php` is the
+  connection entry; DDL lives in `D:\Apache24\db\sqlserver\01...06-*.sql`. Times are
+  Beijing `datetime2(0)`, PHP uses Unix seconds, amounts are cents, and writes use
+  `SET XACT_ABORT ON` with deadlock/lock-timeout retries.
+- **Reimbursement state is also in SQL Server.** Both
+  `dingtalk_reimbursement_sessions` and `dingtalk_reimbursement_forms` use `FinanceDb`.
+  `data\db.sqlite` remains for inbound dedupe, bindings, the outbound queue, and the
+  personal invoice ledger.
+- Current `REQUIRE_MENTION` is `False`, so matching commands are accepted without a
+  mention. Do not use the group/private mention flag as a substitute for command
+  authorization. Reimbursement and finance review still require a private chat.
 - **In a private (1:1) chat DingTalk never sets `is_in_at_list`** — 147 of 147 private
   messages in the live log arrived with `mentioned=False`, while every group message
   that mentioned the robot had `mentioned=True`. "私聊 @机器人" therefore shows up as the
@@ -46,6 +73,10 @@ entirely: Kanboard events are queued into SQLite by the plugin and sent by
 - Routing is a priority chain, not a switch: `绑定账号` > `查询项目` > `查询任务` >
   keyword `项目情况` > generic `查询`. The generic `查询\s*(...)` pattern would also
   match `查询项目`, so only the order keeps them apart.
+- **The live route order is reimbursement wizard -> finance wizard -> attachment OCR
+  -> intent catalog.** A reimbursement wizard releases any active catalog command
+  except the review-step actions `打印` and `暂不打印`; the finance wizard owns only
+  its check words and must not swallow unrelated commands.
 - Claim each `message_id` in `dingtalk_inbound_messages` before the first reply, or
   DingTalk retries produce duplicate replies.
 - Keep each reply under roughly 12000 bytes of JSON-encoded content;
@@ -64,6 +95,16 @@ entirely: Kanboard events are queued into SQLite by the plugin and sent by
   logged-on desktop session, so it goes through `data\reimbursement\print-queue` and the
   `DingTalkKanboardPrint` scheduled task. A new queued command must also be added to
   `ALLOWED_COMMANDS` in `print-worker.py` or the worker silently refuses it.
+- **Invoice OCR has two codebases.** PHP invokes the ASCII-path worker, but parser rules
+  live in the Chinese-path invoice project. Read
+  `references/invoice-ocr.md` before changing extraction logic. A worker result is not
+  enough: re-run the archived form and verify `dingtalk:finance-detail` or
+  `finance_invoices`.
+- **RuoYi delegates writes back to this deployment.** Its finance/project modules call
+  the Kanboard CLI; do not reimplement verification, printing, OCR, archive or restore
+  in Java. `kanboard.assign-notify` is still `true` in current RuoYi configs although
+  `dingtalk:pm-task-assign` is unregistered; treat assignment notification as a known
+  cutover risk until fixed and verified.
 
 ## RuoYi panel spacing (standing UI rule)
 
@@ -147,12 +188,15 @@ Identifiers:
 
 ## Workflow
 
-1. Read `references/interaction-logic.md` for current routing, commands, message
-   formats, queue semantics, and database tables.
-2. Read `references/change-recipes.md` for which files to touch, in what order, for
-   the change being made.
-3. Make the change and verify it through the CLI.
-4. **Restart the daemon** — always, whatever changed — and confirm the new startup
+1. Read the plugin's canonical `README.md` for current runtime scope, commands and data
+   ownership.
+2. Read `references/interaction-logic.md` for detailed routing and queue mechanics;
+   treat its project/onboarding/SQLite-era sections as legacy unless the current
+   cutover notes say otherwise.
+3. Read `references/change-recipes.md` for the files to touch, and
+   `references/invoice-ocr.md` for any invoice extraction change.
+4. Make the change and verify it through the CLI and the relevant regression tests.
+5. **Restart the daemon** — always, whatever changed — and confirm the new startup
    line in `data\dingtalk-stream.log`. Do not report the work as done before this.
 
 ## Verify
@@ -218,3 +262,49 @@ installs plugin releases and is not configured on this host.
 
 If writes or process execution are blocked by the sandbox, request approval to run
 the command outside the sandbox instead of working around it.
+
+## Current finance and OCR runbook
+
+Re-run OCR for one archived invoice:
+
+```powershell
+Set-Location D:\Apache24\htdocs\kanboard
+D:\php\php.exe cli dingtalk:finance-ocr BX20261021-10076 --seq=1
+D:\php\php.exe cli dingtalk:finance-sync --limit 5
+$env:DINGTALK_STAFF_ID='<staff id with finance permission>'
+D:\php\php.exe cli dingtalk:finance-detail BX20261021-10076
+```
+
+Run parser and worker checks:
+
+```powershell
+Set-Location C:\Users\Administrator\Documents\ChatGPT\发票助手
+.\.venv\Scripts\python.exe -m pytest -q
+$env:INVOICE_NAMES='["invoice.pdf"]'
+D:\Apache24\invoice-ocr\.venv\Scripts\python.exe `
+  D:\Apache24\invoice-ocr\ocr_worker.py D:\path\to\invoice.pdf
+```
+
+Known text-layer cases that have caused real misreads:
+
+- A 20-digit digital invoice number concatenated with the four-digit invoice-date year.
+- Buyer/seller labels split into vertical single-character tokens.
+- The name block reduced to `称:` and the tax-id line prefixed with `信息`.
+- Left/right buyer-seller assignment lost when tiny y-coordinate differences reorder rows.
+
+Do not "fix" these by guessing arbitrary digit lengths. Keep the 20-digit number rule
+anchored to a following date and keep buyer/seller side inference limited to a plausible
+single-page horizontal band.
+
+## Legacy project-management knowledge
+
+If explicitly asked to revive Kanboard project features, first read the cutover document
+and verify that RuoYi no longer owns the data path. Re-enable only with matching work in:
+
+- `KANBOARD_PROJECT_FEATURES_ENABLED` and `KANBOARD_PROJECT_INTENT_KEYS`.
+- `Plugin.php` command registration and task event listeners.
+- The RuoYi project notifier or replacement event source.
+
+When project reports are revived, use `TaskScope` for finished/overdue semantics. On this
+instance tasks are normally left active and moved to a column named `完成`, so
+`is_active=0` alone is wrong.

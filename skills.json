@@ -1,17 +1,17 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-19T18:11:15+08:00",
+    "generatedAt":  "2026-10-23T10:22:51+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
                        "name":  "dingtalk-kanboard-bot",
                        "type":  "own",
                        "path":  "skills/dingtalk-kanboard-bot",
-                       "description":  "Change the two-way DingTalk (钉钉) robot that fronts this machine\u0027s Kanboard instance: StreamBridge.py reply routing and keywords, the DingTalkNotifier PHP plugin commands and services, the SQLite notification queue, user binding, and onboarding. Use when adding or editing bot commands, reply text or formatting, task notifications, or DingTalk API behavior for this deployment.",
+                       "description":  "Operate and maintain this machine\u0027s DingTalk-to-Kanboard bridge for RuoYi finance: StreamBridge routing, reimbursement and finance PHP services, invoice OCR, SQL Server Finance data, notification queues, web ledger, and desktop printing. Use for this deployment\u0027s bot changes or troubleshooting; do not apply it to unrelated Kanboard robots or RuoYi business modules.",
                        "source":  null,
-                       "sha256":  "13E432736A367B765013BD1E6A5087B1A91C751E8ED06463FCA4FF2CA5A52A08",
-                       "files":  4,
+                       "sha256":  "7130338D8546E8B423969C6DEA3AB06B4851C580F85236AA5678D8A6D800DC47",
+                       "files":  5,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\dingtalk-kanboard-bot",
                                               "%USERPROFILE%\\.claude\\skills\\dingtalk-kanboard-bot"

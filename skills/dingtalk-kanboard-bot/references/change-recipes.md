@@ -1,5 +1,11 @@
 # Change recipes
 
+> **Current authority (verified 2026-10-23):** the plugin's `README.md` defines the
+> live cutover scope and data ownership. Finance and reimbursement state use SQL Server
+> `Finance` through `Service/FinanceDb.php`; `data\db.sqlite` is limited to inbound
+> dedupe, bindings, the outbound queue and the personal invoice ledger. Project-bot
+> recipes below are legacy unless the cutover section explicitly restores them.
+
 ## Which files to touch
 
 | Change | Files |
