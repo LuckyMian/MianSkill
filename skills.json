@@ -1,23 +1,9 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-23T10:25:04+08:00",
+    "generatedAt":  "2026-10-23T10:50:51+08:00",
     "skillsRoot":  "skills",
     "skills":  [
-                   {
-                       "name":  "dingtalk-kanboard-bot",
-                       "type":  "own",
-                       "path":  "skills/dingtalk-kanboard-bot",
-                       "description":  "Operate and maintain this machine\u0027s DingTalk-to-Kanboard bridge for RuoYi finance: StreamBridge routing, reimbursement and finance PHP services, invoice OCR, SQL Server Finance data, notification queues, web ledger, and desktop printing. Use for this deployment\u0027s bot changes or troubleshooting; do not apply it to unrelated Kanboard robots or RuoYi business modules.",
-                       "source":  null,
-                       "sha256":  "7130338D8546E8B423969C6DEA3AB06B4851C580F85236AA5678D8A6D800DC47",
-                       "files":  5,
-                       "installTargets":  [
-                                              "%USERPROFILE%\\.codex\\skills\\dingtalk-kanboard-bot",
-                                              "%USERPROFILE%\\.claude\\skills\\dingtalk-kanboard-bot"
-                                          ],
-                       "provenance":  "本地自建（dingtalk-kanboard-bot 目录创建于 2026-09-11）"
-                   },
                    {
                        "name":  "drawio",
                        "type":  "official",
@@ -37,6 +23,48 @@
                        "provenance":  "官方技能，来源 https://github.com/jgraph/drawio-mcp 的 plugins/codex/drawio/skills/drawio，固定版本 eebe7de，与本机文件哈希一致，未做修改"
                    },
                    {
+                       "name":  "figgo-erp-dev",
+                       "type":  "own",
+                       "path":  "skills/figgo-erp-dev",
+                       "description":  "Develop and maintain the Figgo (飞戈) ERP stack on this machine: the DingTalk robot bridge, the reimbursement and finance workflow across Kanboard PHP, SQL Server Finance and RuoYi, invoice OCR, the RuoYi backend and console UI, the Excel/printing pipeline, and the data stores behind them. Load the matching module under modules/ before changing anything. Kanboard project-management bot features are sealed, not live.",
+                       "source":  null,
+                       "sha256":  "A27144F66B98E365B28D99056DF53BE306CEC5D6030E0FC205866158E919B20A",
+                       "files":  9,
+                       "installTargets":  [
+                                              "%USERPROFILE%\\.codex\\skills\\figgo-erp-dev",
+                                              "%USERPROFILE%\\.claude\\skills\\figgo-erp-dev"
+                                          ],
+                       "provenance":  "本地自建（figgo-erp-dev 目录创建于 2026-10-23）"
+                   },
+                   {
+                       "name":  "freecad-plugin-dev",
+                       "type":  "own",
+                       "path":  "skills/freecad-plugin-dev",
+                       "description":  "Develop, test, package, and publish FreeCAD 1.1 Python workbenches in the LuckyMian FreeCad_Plugins repository at F:\\Codex\\Freecad. Use for workbench commands, Qt panels, FreeCAD API integration, addon metadata, development linking, or plugin delivery in this repository; do not use for FreeCAD C++ modules, generic CAD modeling, or unrelated addons.",
+                       "source":  null,
+                       "sha256":  "E521180F5D696D12DEB3F9104B132333456335F45E496C561D84FC2C3CFD6F8C",
+                       "files":  15,
+                       "installTargets":  [
+                                              "%USERPROFILE%\\.codex\\skills\\freecad-plugin-dev",
+                                              "%USERPROFILE%\\.claude\\skills\\freecad-plugin-dev"
+                                          ],
+                       "provenance":  "本地自建（freecad-plugin-dev 目录创建于 2026-10-23）"
+                   },
+                   {
+                       "name":  "gismap-helper",
+                       "type":  "own",
+                       "path":  "skills/gismap-helper",
+                       "description":  "处理并切片已下载的谷歌卫星地图：自动识别大图+坐标文件、GeoTIFF、z/x/y 瓦片目录、MBTiles，按经纬度精确对齐输出 XYZ、TMS、MBTiles 瓦片与离线预览页，并可导出整幅大图或 2x2、3x3、4x4 分幅。当用户要拼接、切片、切瓦片、分幅、裁剪、转格式或校准已下载的谷歌卫星影像/航拍底图，或要生成可离线浏览的瓦片底图时使用；不用于联网抓取或下载瓦片（本技能只处理已下载的数据），也不用于与瓦片产出无关的 GIS 数据加工。",
+                       "source":  null,
+                       "sha256":  "D83EA890B7B577613A15B2743A1EDB16BF164AC81157A3D2F3798428EC543A4B",
+                       "files":  7,
+                       "installTargets":  [
+                                              "%USERPROFILE%\\.codex\\skills\\gismap-helper",
+                                              "%USERPROFILE%\\.claude\\skills\\gismap-helper"
+                                          ],
+                       "provenance":  "本地自建（gismap-helper 目录创建于 2026-10-23）"
+                   },
+                   {
                        "name":  "ruoyi-pocketbase-admin",
                        "type":  "own",
                        "path":  "skills/ruoyi-pocketbase-admin",
@@ -48,7 +76,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
                                               "%USERPROFILE%\\.claude\\skills\\ruoyi-pocketbase-admin"
                                           ],
-                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-23）"
                    },
                    {
                        "name":  "skill-vault",
@@ -62,7 +90,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
                                               "%USERPROFILE%\\.claude\\skills\\skill-vault"
                                           ],
-                       "provenance":  "本地自建（skill-vault 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（skill-vault 目录创建于 2026-10-23）"
                    },
                    {
                        "name":  "ucs-development",
@@ -76,7 +104,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\ucs-development",
                                               "%USERPROFILE%\\.claude\\skills\\ucs-development"
                                           ],
-                       "provenance":  "本地自建（ucs-development 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（ucs-development 目录创建于 2026-10-23）"
                    },
                    {
                        "name":  "wow-addon-dev",
@@ -90,7 +118,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\wow-addon-dev",
                                               "%USERPROFILE%\\.claude\\skills\\wow-addon-dev"
                                           ],
-                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-10-15）"
+                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-10-23）"
                    }
                ]
 }
