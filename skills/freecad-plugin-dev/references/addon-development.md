@@ -131,6 +131,8 @@ Edge operations are order-sensitive. For a plate with holes and a window/pocket,
 
 Select outer-perimeter edges from the two large faces' `OuterWire`, not by face area (a pocket floor is also a large face). Wrap each `makeFillet`/`makeChamfer` in `try/except` and log a warning; an extreme parameter should not destroy the feature. If a blind pocket is added to a mirrored/paired part, parameterize which local face is the **outside**; simply copying the same solid can close the wrong side.
 
+**Every printable model needs chamfers** (non-negotiable project rule). Expose at least an outer-edge chamfer and a hole/bore-mouth chamfer (default roughly 0.5–1.0 mm), include them in the model's parameter object and dialog, and apply them even to models that are "just a plate". For a new part, chamfer each simple solid before fusing it into the assembly: a plain box/prism accepts a chamfer on all edges, while a fused L-shape, U-slot, or thin-wall sleeve is much more likely to fail. Chamfering before the fuse also keeps the visible outer edges clean and avoids selecting edges on complex boolean results. Do not leave a model with raw sharp outer corners because "it prints anyway".
+
 ## Starting from the template
 
 1. Copy the contents of `assets/addon-template/` to `plugins/<addon-id>/`.
