@@ -30,6 +30,36 @@ The validator starts the installed FreeCAD Python and imports the root `core` mo
 
 Exercise geometry or document APIs with a temporary document, then close it without saving. Do not leave test documents or backup files in the user's open documents.
 
+`FreeCADCmd.exe script.py` executes the file with `__name__` set to the **file stem**, not `"__main__"`. Call the test entry point unconditionally, or check `if __name__ in ("__main__", Path(__file__).stem)`. A script that only has `if __name__ == "__main__": main()` will silently do nothing under FreeCADCmd.
+
+Add a save/reload smoke check for every new `FeaturePython` object:
+
+1. create the object and force `doc.recompute()`;
+2. `doc.saveAs(temp_file)`, close, reopen;
+3. `doc.getObject(...)`, call `recompute()`, and assert the shape/children still exist;
+4. change one parameter and assert it rebuilds.
+
+The reload pass catches missing `__setstate__` initialization and broken cross-object references.
+
+## GUI automation
+
+For repeatable GUI acceptance without a human, start `FreeCAD.exe` with a Python script and drive it with `QTimer`:
+
+```powershell
+& 'C:\Program Files\FreeCAD 1.1\bin\FreeCAD.exe' "F:\path\to\gui_smoke.py"
+```
+
+At the end of the script schedule `Gui.getMainWindow().close()`; use `QTimer.singleShot(3000, run)` so the main window and workbench are initialized before creating objects. Save a screenshot with `Gui.activeDocument().activeView().saveImage(path, width, height, "Current")`.
+
+For a command with a modal dialog:
+
+- `Gui.runCommand(...)` invoked from a `QTimer` callback can return before the command actually runs; do not treat that as success.
+- A deterministic alternative is to instantiate the command object and call `command.Activated()` directly, then use a second `QTimer` to find the **visible** dialog and accept it.
+- Filter top-level widgets with `widget.isVisible()`; stale, closed dialogs stay in `QApplication.topLevelWidgets()` and can be mistaken for the current dialog.
+- After the command returns, assert the object count and inspect the child shapes.
+
+Do not print `⌀` or `Ø` to FreeCADCmd on a Chinese Windows console: the GBK codec cannot encode them and the script can abort. Use `Φ` (U+03A6) or plain `D12`, and write UTF-8 logs to files when symbols are needed. Chinese summary strings printed to the console may look mojibake; that is a console-encoding artifact, not necessarily a data error.
+
 ## GUI acceptance checklist
 
 1. Mount the plugin with `dev_link.ps1` and start `FreeCAD.exe`.

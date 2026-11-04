@@ -1,9 +1,10 @@
-import os
+from pathlib import Path
 
 import FreeCADGui as Gui
+import __PYTHON_PACKAGE__ as addon_package
 
 
-ICON_DIR = os.path.join(os.path.dirname(__file__), "resources", "icons")
+ICON_DIR = str(Path(addon_package.__file__).resolve().parents[1] / "resources" / "icons")
 Gui.addIconPath(ICON_DIR)
 
 

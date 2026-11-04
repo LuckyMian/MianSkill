@@ -1,7 +1,7 @@
 {
     "schemaVersion":  1,
     "repo":  "https://github.com/LuckyMian/MianSkill",
-    "generatedAt":  "2026-10-23T10:52:14+08:00",
+    "generatedAt":  "2026-11-04T18:25:34+08:00",
     "skillsRoot":  "skills",
     "skills":  [
                    {
@@ -34,21 +34,21 @@
                                               "%USERPROFILE%\\.codex\\skills\\figgo-erp-dev",
                                               "%USERPROFILE%\\.claude\\skills\\figgo-erp-dev"
                                           ],
-                       "provenance":  "本地自建（figgo-erp-dev 目录创建于 2026-10-23）"
+                       "provenance":  "本地自建（figgo-erp-dev 目录创建于 2026-11-04）"
                    },
                    {
                        "name":  "freecad-plugin-dev",
                        "type":  "own",
                        "path":  "skills/freecad-plugin-dev",
-                       "description":  "Develop, test, package, and publish FreeCAD 1.1 Python workbenches in the LuckyMian FreeCad_Plugins repository at F:\\Codex\\Freecad. Use for workbench commands, Qt panels, FreeCAD API integration, addon metadata, development linking, or plugin delivery in this repository; do not use for FreeCAD C++ modules, generic CAD modeling, or unrelated addons.",
+                       "description":  "Develop, test, package, and publish FreeCAD 1.1 Python workbenches, either in the LuckyMian FreeCad_Plugins repository at F:\\Codex\\Freecad or in a user-assigned standalone workspace. Use for workbench commands, Qt panels, FreeCAD API integration, addon metadata, development linking, or plugin delivery; do not use for FreeCAD C++ modules, generic CAD modeling, or unrelated addons.",
                        "source":  null,
-                       "sha256":  "E521180F5D696D12DEB3F9104B132333456335F45E496C561D84FC2C3CFD6F8C",
-                       "files":  15,
+                       "sha256":  "DB60809ED43A2A3176F4803842E61C3FCAE3B5446E033D9BD5EFF30B5D9E8A9D",
+                       "files":  17,
                        "installTargets":  [
                                               "%USERPROFILE%\\.codex\\skills\\freecad-plugin-dev",
                                               "%USERPROFILE%\\.claude\\skills\\freecad-plugin-dev"
                                           ],
-                       "provenance":  "本地自建（freecad-plugin-dev 目录创建于 2026-10-23）"
+                       "provenance":  "本地自建（freecad-plugin-dev 目录创建于 2026-11-04）"
                    },
                    {
                        "name":  "gismap-helper",
@@ -62,7 +62,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\gismap-helper",
                                               "%USERPROFILE%\\.claude\\skills\\gismap-helper"
                                           ],
-                       "provenance":  "本地自建（gismap-helper 目录创建于 2026-10-23）"
+                       "provenance":  "本地自建（gismap-helper 目录创建于 2026-11-04）"
                    },
                    {
                        "name":  "ruoyi-pocketbase-admin",
@@ -76,7 +76,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\ruoyi-pocketbase-admin",
                                               "%USERPROFILE%\\.claude\\skills\\ruoyi-pocketbase-admin"
                                           ],
-                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-10-23）"
+                       "provenance":  "本地自建（ruoyi-pocketbase-admin 目录创建于 2026-11-04）"
                    },
                    {
                        "name":  "skill-vault",
@@ -90,7 +90,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\skill-vault",
                                               "%USERPROFILE%\\.claude\\skills\\skill-vault"
                                           ],
-                       "provenance":  "本地自建（skill-vault 目录创建于 2026-10-23）"
+                       "provenance":  "本地自建（skill-vault 目录创建于 2026-11-04）"
                    },
                    {
                        "name":  "ucs-development",
@@ -104,7 +104,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\ucs-development",
                                               "%USERPROFILE%\\.claude\\skills\\ucs-development"
                                           ],
-                       "provenance":  "本地自建（ucs-development 目录创建于 2026-10-23）"
+                       "provenance":  "本地自建（ucs-development 目录创建于 2026-11-04）"
                    },
                    {
                        "name":  "wow-addon-dev",
@@ -118,7 +118,7 @@
                                               "%USERPROFILE%\\.codex\\skills\\wow-addon-dev",
                                               "%USERPROFILE%\\.claude\\skills\\wow-addon-dev"
                                           ],
-                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-10-23）"
+                       "provenance":  "本地自建（wow-addon-dev 目录创建于 2026-11-04）"
                    }
                ]
 }
