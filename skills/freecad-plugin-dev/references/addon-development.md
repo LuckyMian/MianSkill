@@ -122,12 +122,14 @@ Edge operations are order-sensitive. For a plate with holes and a window/pocket,
 
 1. extrude the outer profile;
 2. fillet the outer vertical corners;
-3. cut the through-holes;
-4. chamfer the hole edges;
+3. cut the through-holes or the blind bores (and any small vent holes);
+4. chamfer the visible hole mouths;
 5. cut the window/pocket;
 6. fillet the window's vertical corners;
 7. chamfer the outer perimeter;
-8. add outer-face caps.
+8. if the outer face must be closed, leave a **flush blind wall** instead of a protruding cap, and vent it with a small through-hole.
+
+A closed rod bore with only a 0.1 mm clearance acts like a piston: without a vent, trapped air makes insertion/removal difficult. Leave the outer face flush with a small (for example Φ2) vent hole through the remaining wall, and keep the blind depth larger than the rod embed. Do not solve this with a raised conical cap; users reject the protruding look.
 
 Select outer-perimeter edges from the two large faces' `OuterWire`, not by face area (a pocket floor is also a large face). Wrap each `makeFillet`/`makeChamfer` in `try/except` and log a warning; an extreme parameter should not destroy the feature. If a blind pocket is added to a mirrored/paired part, parameterize which local face is the **outside**; simply copying the same solid can close the wrong side.
 
